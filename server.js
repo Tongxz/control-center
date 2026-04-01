@@ -404,6 +404,44 @@ app.get('/api/memory/:agentId', (req, res) => {
   res.json(indexer.getMemory(req.params.agentId));
 });
 
+// ── Budget helpers ──────────────────────────────────────────────
+
+const BUDGET_CONFIG_FILE = path.join(RUNTIME_DIR, 'budget-config.json');
+
+function loadBudgetConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(BUDGET_CONFIG_FILE, 'utf8'));
+  } catch {
+    // Default: 1M tokens/month, warn at 80%
+    return { monthlyLimit: 1_000_000, warnAtPercent: 80 };
+  }
+}
+
+function getBudgetFromSessions() {
+  const snap = poll.getSnapshot();
+  if (!snap) return null;
+  const sessions = snap.sessions?._raw || [];
+  // Use the sessions data from snapshot to compute monthly usage
+  // Fall back to aggregating from session list if available
+  try {
+    const out = execSync('openclaw status --json 2>&1', { shell: true, timeout: 10_000 });
+    const firstBrace = out.indexOf('{');
+    if (firstBrace === -1) return null;
+    const statusData = JSON.parse(out.slice(firstBrace));
+    const recentSessions = statusData?.sessions?.recent || [];
+    const now = Date.now();
+    const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
+    const monthSessions = recentSessions.filter(s => s.updatedAt && s.updatedAt > monthAgo);
+    const inputTokens = monthSessions.reduce((sum, s) => sum + (s.inputTokens || 0), 0);
+    const outputTokens = monthSessions.reduce((sum, s) => sum + (s.outputTokens || 0), 0);
+    const cacheRead = monthSessions.reduce((sum, s) => sum + (s.cacheRead || 0), 0);
+    const totalTokens = monthSessions.reduce((sum, s) => sum + (s.totalTokens || 0), 0);
+    return { inputTokens, outputTokens, cacheRead, totalTokens, sessionCount: monthSessions.length };
+  } catch {
+    return null;
+  }
+}
+
 app.get('/api/settings/health', (req, res) => {
   const snap = poll.getSnapshot();
   let channelStatus = [];
@@ -411,17 +449,48 @@ app.get('/api/settings/health', (req, res) => {
     const out = execSync('openclaw channels status --probe 2>&1', { shell: true, timeout: 10_000 });
     channelStatus = parseChannelProbe(out.toString());
   } catch {
-    // fallback to snapshot channel data
     channelStatus = (snap?.gateway?.channelStatus || []).map((c) => ({
       channel: c.channel,
       status: c.status,
     }));
   }
+
+  const config = loadBudgetConfig();
+  const usage = getBudgetFromSessions();
+  const budget = usage
+    ? {
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        cacheRead: usage.cacheRead,
+        totalTokens: usage.totalTokens,
+        monthlyLimit: config.monthlyLimit,
+        warnAtPercent: config.warnAtPercent,
+        percentUsed: Math.round((usage.totalTokens / config.monthlyLimit) * 100),
+        sessionCount: usage.sessionCount,
+        status: usage.totalTokens >= config.monthlyLimit
+          ? 'exceeded'
+          : usage.totalTokens >= config.monthlyLimit * (config.warnAtPercent / 100)
+            ? 'warning'
+            : 'ok',
+      }
+    : null;
+
   res.json({
     gateway: snap?.gateway || { status: 'unknown', version: 'unknown' },
     channel: channelStatus,
     openclawVersion: snap?.gateway?.version || 'unknown',
+    budget,
   });
+});
+
+// PATCH /api/settings/budget — update budget config
+app.patch('/api/settings/budget', (req, res) => {
+  const config = loadBudgetConfig();
+  const { monthlyLimit, warnAtPercent } = req.body;
+  if (monthlyLimit !== undefined) config.monthlyLimit = Number(monthlyLimit);
+  if (warnAtPercent !== undefined) config.warnAtPercent = Number(warnAtPercent);
+  fs.writeFileSync(BUDGET_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
+  res.json({ updated: true, config });
 });
 
 function parseChannelProbe(text) {

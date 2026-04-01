@@ -1149,6 +1149,33 @@
         ? securityFlags.map(f => `<span class="badge badge-blue">${f}</span>`).join(' ')
         : '<span style="color:#555;">None</span>';
 
+      // Budget
+      const budget = health.budget;
+      let budgetHTML = \`<div class="settings-row"><div><div class="label">Token 用量</div><div class="desc">No usage data available</div></div><span class="badge badge-gray">N/A</span></div>\`;
+      if (budget) {
+        const pct = budget.percentUsed || 0;
+        const limit = budget.monthlyLimit || 1000000;
+        const statusClass = budget.status === 'exceeded' ? 'badge-red' : budget.status === 'warning' ? 'badge-yellow' : 'badge-green';
+        const statusLabel = budget.status === 'exceeded' ? 'EXCEEDED' : budget.status === 'warning' ? 'WARNING' : 'OK';
+        const statusNote = budget.status === 'exceeded' ? 'Budget exceeded — please review usage'
+          : budget.status === 'warning' ? \`Approaching limit (warn at \${budget.warnAtPercent}%)\`
+          : \`Within budget (warn at \${budget.warnAtPercent}%)\`;
+        const barWidth = Math.min(pct, 100);
+        const barColor = budget.status === 'exceeded' ? '#f04040' : budget.status === 'warning' ? '#f0c040' : '#3ddc84';
+        budgetHTML = \`<div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="label">Token 用量 <span style="font-size:11px;color:#666;">（本月）</span></div>
+              <div class="desc">\${budget.sessionCount || 0} sessions · input \${formatTokens(budget.inputTokens)} + output \${formatTokens(budget.outputTokens)}</div>
+            </div>
+            <span class="badge \${statusClass}">\${statusLabel}</span>
+          </div>
+          <div style="background:#111;border-radius:4px;height:8px;overflow:hidden;"><div style="width:\${barWidth}%;height:100%;background:\${barColor};transition:width 0.3s;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;"><span>\${formatTokens(budget.totalTokens || 0)} used</span><span>\${formatTokens(limit)} limit</span><span>\${pct}%</span></div>
+          <div style="font-size:11px;color:\${budget.status === 'exceeded' ? '#f04040' : budget.status === 'warning' ? '#f0c040' : '#555'};">\${statusNote}</div>
+        </div>\`;
+      }
+
       panel.innerHTML = `
         <h1>设置</h1>
 
@@ -1167,6 +1194,9 @@
           </div>
           <span class="badge ${gw.status === 'healthy' ? 'badge-green' : 'badge-yellow'}">${gw.status || 'unknown'}</span>
         </div>
+
+        <h2>Token 用量</h2>
+        \${budgetHTML}
 
         <h2>频道</h2>
         <div class="settings-row">
@@ -2016,6 +2046,13 @@
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function formatTokens(n) {
+    if (!n && n !== 0) return '—';
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return String(n);
   }
 
   function formatUptime(ms) {
