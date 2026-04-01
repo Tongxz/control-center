@@ -1518,33 +1518,81 @@
     try {
       const exceptions = await fetchJSON('/api/exceptions');
 
+      const sevClass = s => s === 'critical' ? 'badge-red' : s === 'high' ? 'badge-yellow' : s === 'medium' ? 'badge-yellow' : 'badge-blue';
+      const statusClass = s => s === 'acknowledged' ? 'badge-gray' : s === 'snoozed' ? 'badge-blue' : '';
+
+      const toolbar = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <span style="font-size:12px;color:#555;">${exceptions.length} 条待处理异常</span>
+          <label style="font-size:12px;color:#666;cursor:pointer;">
+            <input type="checkbox" id="exc-show-acked" style="margin-right:4px;" />
+            显示已确认
+          </label>
+        </div>`;
+
       if (!exceptions.length) {
-        panel.innerHTML = `
-          <div class="health-ok">
-            <span class="check">✓</span>
-            无异常 — system is healthy
-          </div>
-        `;
+        panel.innerHTML = toolbar + `<div class="health-ok"><span class="check">✓</span>无异常 — system is healthy</div>`;
+        document.getElementById('exc-show-acked')?.addEventListener('change', async (ev) => {
+          const url = ev.target.checked ? '/api/exceptions?includeAcked=1' : '/api/exceptions';
+          const all = await fetchJSON(url).catch(() => []);
+          renderExceptions(all, panel);
+        });
         return;
       }
 
-      const rows = exceptions.map(e => {
-        const sevClass = e.severity === 'critical' ? 'badge-red'
-          : e.severity === 'high' ? 'badge-yellow'
-          : e.severity === 'medium' ? 'badge-yellow'
-          : 'badge-blue';
-        return `
-          <div class="exc-item">
-            <div class="exc-type">
-              <span class="badge ${sevClass}">${escHtml(e.severity || 'unknown')}</span>
-              &nbsp;${escHtml(e.type || 'Unknown type')}
-            </div>
-            <div class="exc-msg">${escHtml(e.message || '')}</div>
+      panel.innerHTML = toolbar + exceptions.map(e => `
+        <div class="exc-item" data-id="${escHtml(e.exceptionId)}" style="position:relative;">
+          <div class="exc-type" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span class="badge ${sevClass(e.severity)}">${escHtml(e.severity)}</span>
+            <span style="color:#888;font-size:11px;">${escHtml(e.type)}</span>
+            <span style="color:#555;font-size:11px;">·</span>
+            <span style="color:#555;font-size:11px;">${escHtml(e.source)}</span>
+            ${e.actionStatus !== 'pending' ? `<span class="badge ${statusClass(e.actionStatus)}" style="margin-left:auto;">${e.actionStatus}</span>` : ''}
           </div>
-        `;
-      }).join('');
+          <div class="exc-msg">${escHtml(e.message)}</div>
+          ${e.actionRequired ? `<div style="font-size:11px;color:#555;margin-top:4px;">→ ${escHtml(e.actionRequired)}</div>` : ''}
+          <div style="margin-top:8px;display:flex;gap:6px;">
+            <button class="btn btn-ghost exc-ack-btn" data-id="${escHtml(e.exceptionId)}" style="font-size:11px;padding:3px 10px;">确认</button>
+          </div>
+        </div>
+      `).join('');
 
-      panel.innerHTML = rows;
+      // Ack buttons
+      panel.querySelectorAll('.exc-ack-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await fetch(`/api/action-queue/${encodeURIComponent(btn.dataset.id)}/ack`, { method: 'POST' });
+          loadExceptions();
+        });
+      });
+
+      document.getElementById('exc-show-acked')?.addEventListener('change', async (ev) => {
+        const url = ev.target.checked ? '/api/exceptions?includeAcked=1' : '/api/exceptions';
+        const all = await fetchJSON(url).catch(() => []);
+        // re-render in place without full reload
+        const rows = panel.querySelectorAll('.exc-item');
+        rows.forEach(r => r.remove());
+        all.forEach(e => {
+          const d = document.createElement('div');
+          d.className = 'exc-item';
+          d.dataset.id = e.exceptionId;
+          d.innerHTML = `
+            <div class="exc-type" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span class="badge ${sevClass(e.severity)}">${escHtml(e.severity)}</span>
+              <span style="color:#888;font-size:11px;">${escHtml(e.type)}</span>
+              ${e.actionStatus !== 'pending' ? `<span class="badge ${statusClass(e.actionStatus)}" style="margin-left:auto;">${e.actionStatus}</span>` : ''}
+            </div>
+            <div class="exc-msg">${escHtml(e.message)}</div>
+            ${e.actionRequired ? `<div style="font-size:11px;color:#555;margin-top:4px;">→ ${escHtml(e.actionRequired)}</div>` : ''}
+            <div style="margin-top:8px;"><button class="btn btn-ghost exc-ack-btn" data-id="${escHtml(e.exceptionId)}" style="font-size:11px;padding:3px 10px;">确认</button></div>
+          `;
+          d.querySelector('.exc-ack-btn')?.addEventListener('click', async () => {
+            await fetch(`/api/action-queue/${encodeURIComponent(e.exceptionId)}/ack`, { method: 'POST' });
+            loadExceptions();
+          });
+          panel.appendChild(d);
+        });
+      });
+
     } catch (err) {
       panel.innerHTML = `<div class="error-msg">加载失败: ${err.message}</div>`;
     }

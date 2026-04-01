@@ -371,7 +371,151 @@ app.get('/api/projects/:projectId/summary', (req, res) => {
   });
 });
 
-app.get('/api/exceptions', (req, res) => res.json([]));
+// ── Exceptions aggregation ────────────────────────────────────
+
+function buildExceptions() {
+  const snap = poll.getSnapshot();
+  const acks = readJson('acks.json') || [];
+  const now = new Date().toISOString();
+
+  // Build ack lookup: itemId → ack entry
+  const acksMap = {};
+  for (const a of acks) acksMap[a.itemId] = a;
+
+  function makeExc({ id, type, severity, source, message, actionRequired = '', relatedSessionId = null, relatedTaskId = null, createdAt = now }) {
+    const ack = acksMap[id];
+    let actionStatus = 'pending';
+    if (ack) {
+      actionStatus = (ack.snoozeUntil && new Date(ack.snoozeUntil) > new Date()) ? 'snoozed' : 'acknowledged';
+    }
+    return {
+      exceptionId: id,
+      type, severity, source, message,
+      actionRequired,
+      actionStatus,
+      relatedSessionId,
+      relatedTaskId,
+      relatedProjectId: null,
+      snoozedUntil: ack?.snoozeUntil || null,
+      createdAt,
+      resolvedAt: null,
+    };
+  }
+
+  const items = [];
+
+  if (snap) {
+    // 1. Cron job failures
+    for (const job of (snap.cron?.jobs || [])) {
+      if (job.status !== 'ok' || job.lastError) {
+        items.push(makeExc({
+          id: `exc-cron-${job.id.slice(0, 8)}`,
+          type: 'cron_error', severity: 'high', source: 'cron',
+          message: `Cron "${job.name}" failed: ${job.lastError || `status=${job.status}`}`,
+          actionRequired: `Check cron job "${job.name}" logs`,
+          createdAt: job.lastRun || now,
+        }));
+      }
+    }
+
+    // 2. Session errors from snapshot counters
+    if ((snap.sessions?.errorCount || 0) > 0) {
+      items.push(makeExc({
+        id: 'exc-session-errors',
+        type: 'session_error', severity: 'high', source: 'session',
+        message: `${snap.sessions.errorCount} session(s) in error state`,
+        actionRequired: 'Review Live Sessions panel for details',
+      }));
+    }
+
+    // 3. Blocked sessions
+    if ((snap.sessions?.blockedCount || 0) > 0) {
+      items.push(makeExc({
+        id: 'exc-session-blocked',
+        type: 'session_blocked', severity: 'critical', source: 'session',
+        message: `${snap.sessions.blockedCount} session(s) blocked — awaiting input`,
+        actionRequired: 'Unblock or restart affected sessions',
+      }));
+    }
+
+    // 4. Channel delivery failures (from gateway channelStatus)
+    for (const ch of (snap.gateway?.channelStatus || [])) {
+      const s = (ch.status || '').toLowerCase();
+      if (s.includes('error') || s.includes('disconnect') || s.includes('fail')) {
+        const name = (ch.channel || 'unknown').replace(/^-\s*/, '').trim();
+        items.push(makeExc({
+          id: `exc-ch-${name.toLowerCase().replace(/\W+/g, '-').slice(0, 20)}`,
+          type: 'delivery_failed', severity: 'high', source: 'gateway',
+          message: `Channel "${name}" status: ${ch.status}`,
+          actionRequired: `Check ${name} channel configuration`,
+        }));
+      }
+    }
+  }
+
+  // 5. Recent tool errors from session-watcher (group by session)
+  const toolErrors = sessionWatcher.getRecentEvents(200).filter(e => e.type === 'tool_result' && e.status === 'error');
+  const errBySession = {};
+  for (const e of toolErrors) {
+    if (!errBySession[e.sessionId]) errBySession[e.sessionId] = { count: 0, agentId: e.agentId, ts: e.ts, lastError: '' };
+    errBySession[e.sessionId].count++;
+    errBySession[e.sessionId].lastError = (e.error || '').slice(0, 100);
+    errBySession[e.sessionId].ts = e.ts;
+  }
+  for (const [sid, info] of Object.entries(errBySession)) {
+    items.push(makeExc({
+      id: `exc-terr-${sid.slice(0, 8)}`,
+      type: 'session_error', severity: 'medium', source: 'session',
+      message: `Session ${sid.slice(0, 8)} (${info.agentId}) — ${info.count} tool error(s): ${info.lastError}`,
+      actionRequired: 'Review tool errors in Live Sessions panel',
+      relatedSessionId: sid,
+      createdAt: info.ts,
+    }));
+  }
+
+  // 6. Pending approvals waiting too long (>30 min)
+  const approvals = readJson('approvals.json') || [];
+  const stale = approvals.filter(a => a.status === 'pending' && a.createdAt && (Date.now() - new Date(a.createdAt).getTime()) > 30 * 60 * 1000);
+  if (stale.length > 0) {
+    items.push(makeExc({
+      id: 'exc-approvals-pending',
+      type: 'approval_pending', severity: 'medium', source: 'approval',
+      message: `${stale.length} approval(s) pending for over 30 minutes`,
+      actionRequired: 'Review and process pending approvals',
+    }));
+  }
+
+  // 7. Budget overrun check
+  const budgetCfg = loadBudgetConfig();
+  const usage = getBudgetFromSessions();
+  if (usage && budgetCfg) {
+    if (usage.totalTokens >= budgetCfg.monthlyLimit) {
+      items.push(makeExc({
+        id: 'exc-budget-exceeded',
+        type: 'budget_overrun', severity: 'critical', source: 'budget',
+        message: `Monthly token budget exceeded: ${usage.totalTokens.toLocaleString()} / ${budgetCfg.monthlyLimit.toLocaleString()} tokens`,
+        actionRequired: 'Review usage and adjust budget limit in Settings',
+      }));
+    } else if (usage.totalTokens >= budgetCfg.monthlyLimit * (budgetCfg.warnAtPercent / 100)) {
+      items.push(makeExc({
+        id: 'exc-budget-warning',
+        type: 'budget_overrun', severity: 'high', source: 'budget',
+        message: `Token usage at ${Math.round((usage.totalTokens / budgetCfg.monthlyLimit) * 100)}% of monthly limit`,
+        actionRequired: 'Monitor usage to avoid budget overrun',
+      }));
+    }
+  }
+
+  return items;
+}
+
+app.get('/api/exceptions', (req, res) => {
+  const all = buildExceptions();
+  // Default: exclude acknowledged (unless ?includeAcked=1)
+  const includeAcked = req.query.includeAcked === '1';
+  const result = includeAcked ? all : all.filter(e => e.actionStatus !== 'acknowledged');
+  res.json(result);
+});
 
 // ── Approvals ─────────────────────────────────────────────────
 
@@ -771,8 +915,9 @@ function runCronRuns(jobId, limit) {
 }
 
 app.get('/api/action-queue', (req, res) => {
-  const acks = readJson('acks.json') || [];
-  res.json(acks);
+  // Action queue = exceptions that require action (pending or snoozed)
+  const items = buildExceptions().filter(e => e.actionStatus === 'pending' || e.actionStatus === 'snoozed');
+  res.json(items);
 });
 
 // POST /api/action-queue/:itemId/ack
