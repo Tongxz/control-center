@@ -258,28 +258,42 @@
 ---
 
 ### T14 · 账单详情
-- 按 agent / session / 项目分类的 token 消耗
-- 日/周趋势图（canvas 原生绘制）
-- CSV 导出
+
+- **状态**：[x]
+- `GET /api/usage/summary`：按 agent 分类的 token 消耗（sessionCount / input / output / total / cost）
+- `GET /api/usage/export.csv`：CSV 下载
+- 前端"账单"panel：汇总卡片 + canvas 柱状图 + 导出按钮
 
 ### T15 · Collaboration Hall
-- spawn 链路可视化（main → forge → reviewer 树形图）
-- 多 agent 协作时间线
-- 数据源：session announce 记录
+
+- **状态**：[x]
+- `GET /api/hall`：从 session-watcher 事件聚合各 agent 活跃状态 + spawn 链路检测
+- 前端"协作图"panel：agent 卡片 + spawn 链路时间线
 
 ### T16 · Feishu 推送
-- 异常告警、审批通知推送飞书
-- 复用现有 `feishu-bot` 工具
-- 可配置推送级别（仅 critical / 全部）
+
+- **状态**：[x]
+- `GET /api/settings/notify`：查看推送配置
+- `PATCH /api/settings/notify`：设置 webhook URL / 推送级别 / 启停
+- `POST /api/settings/notify/test`：测试发送
+- 审批 approve / reject 操作自动 fire-and-forget 推送
+- 前端 Settings panel 新增 Feishu 配置区域
 
 ### T17 · Audit Export
-- 快照导出（runtime + workspace 打包 ZIP）
-- session 关键步骤回放（基于 timeline.log）
+
+- **状态**：[x]
+- `GET /api/export/runtime`：导出 runtime/ 所有文件为 JSON bundle
+- `GET /api/export/timeline.csv`：导出 timeline.log 为 CSV
+- Timeline panel 新增"导出 CSV"按钮；Settings 新增"导出 Runtime"按钮
 
 ### T18 · 远程访问
-- Tailscale 接入配置
-- 简单 Bearer token 鉴权
-- 待 Phase 2 完成后细化
+
+- **状态**：[x]
+- `GET /api/settings/access`：查看鉴权配置
+- `PATCH /api/settings/access`：设置 Bearer token（SHA-256 哈希存储）/ 启停
+- 认证中间件：非 localhost 请求强制校验 `Authorization: Bearer <token>`
+- 前端 Settings panel 新增远程访问配置区域
+- **注**：Tailscale 接入为网络层配置，不在代码实现范围
 
 ---
 
@@ -294,6 +308,10 @@ Phase 2:
 
 Phase 3:
   T14 → T15 → T16 → T17 → T18（顺序可调）
+
+## Phase 3 完成（2026-04-01）
+
+**已实现 T14–T18 全部功能**，详见各任务说明。
 
 ## Phase 3.31 升级（2026-04-02）
 

@@ -3,13 +3,17 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { spawn, execSync } = require('child_process');
+const crypto = require('crypto');
 const { nanoid } = require('nanoid');
+const archiver = require('archiver');
 const indexer = require('./indexer');
 const poll = require('./poll');
 const sessionWatcher = require('./session-watcher');
 
 const RUNTIME_DIR = path.join(__dirname, 'runtime');
 const TASKS_SNAPSHOT_MAX_AGE_MS = 2 * 60 * 1000;
+const NOTIFY_CONFIG_FILE = path.join(RUNTIME_DIR, 'notify-config.json');
+const ACCESS_CONFIG_FILE = path.join(RUNTIME_DIR, 'access-config.json');
 
 // ── JSON file helpers ─────────────────────────────────────────
 
@@ -135,6 +139,21 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ── T18: Auth middleware (remote access) ──────────────────────
+app.use('/api', (req, res, next) => {
+  const cfg = loadAccessConfig();
+  if (!cfg.enabled || !cfg.tokenHash) return next();
+  const ip = req.ip || req.socket?.remoteAddress || '';
+  if (['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip)) return next();
+  const auth = req.headers['authorization'] || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!token) return res.status(401).json({ error: 'Authorization required' });
+  if (crypto.createHash('sha256').update(token).digest('hex') !== cfg.tokenHash) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+  next();
+});
+
 // ── Routes ────────────────────────────────────────────────────
 
 app.get('/api/overview/snapshot', (req, res) => {
@@ -147,6 +166,15 @@ app.get('/api/agents', (req, res) => {
   const snap = poll.getSnapshot();
   if (!snap) return res.status(503).json({ error: 'snapshot not ready yet' });
   res.json(snap.agents);
+});
+
+// GET /api/agents/:agentId/sessions
+app.get('/api/agents/:agentId/sessions', (req, res) => {
+  const snap = poll.getSnapshot();
+  if (!snap) return res.status(503).json({ error: 'snapshot not ready yet' });
+  const all = snap.sessions?._raw || [];
+  const filtered = all.filter(s => s.agentId === req.params.agentId);
+  res.json(filtered);
 });
 
 app.get('/api/tasks', async (req, res) => {
@@ -301,6 +329,28 @@ app.patch('/api/projects/:projectId', (req, res) => {
   res.json(updated);
 });
 
+// DELETE /api/projects/:projectId — archive (soft-delete) a project
+app.delete('/api/projects/:projectId', (req, res) => {
+  const projects = readJson('projects.json') || [];
+  const idx = projects.findIndex(p => p.projectId === req.params.projectId);
+  if (idx === -1) return res.status(404).json({ error: 'not found' });
+
+  const before = { ...projects[idx] };
+  projects[idx] = { ...before, status: 'archived', archivedAt: new Date().toISOString() };
+  writeJson('projects.json', projects);
+
+  recordTimeline({
+    agent: 'system',
+    type: 'project_archive',
+    targetId: req.params.projectId,
+    summary: `归档项目: ${before.name}`,
+    before: { status: before.status },
+    after: { status: 'archived' },
+  });
+
+  res.json(projects[idx]);
+});
+
 // GET /api/projects/:projectId/summary
 app.get('/api/projects/:projectId/summary', (req, res) => {
   const projects = readJson('projects.json') || [];
@@ -322,8 +372,6 @@ app.get('/api/projects/:projectId/summary', (req, res) => {
 });
 
 app.get('/api/exceptions', (req, res) => res.json([]));
-
-app.get('/api/approve', (req, res) => res.json([]));
 
 // ── Approvals ─────────────────────────────────────────────────
 
@@ -376,6 +424,9 @@ app.post('/api/approvals/:approvalId/approve', (req, res) => {
     after: { status: 'approved', comment },
   });
 
+  const _nc1 = loadNotifyConfig();
+  sendFeishuMessage(_nc1, `审批通过: ${approvals[idx].title || approvals[idx].approvalId}`, `备注: ${comment || '无'}`).catch(() => {});
+
   res.json(approvals[idx]);
 });
 
@@ -409,6 +460,9 @@ app.post('/api/approvals/:approvalId/reject', (req, res) => {
     before: { status: 'pending' },
     after: { status: 'rejected', comment },
   });
+
+  const _nc2 = loadNotifyConfig();
+  sendFeishuMessage(_nc2, `审批拒绝: ${approvals[idx].title || approvals[idx].approvalId}`, `备注: ${comment || '无'}`).catch(() => {});
 
   res.json(approvals[idx]);
 });
@@ -516,6 +570,27 @@ app.get('/api/memory/:agentId', (req, res) => {
   res.json(indexer.getMemory(req.params.agentId));
 });
 
+// PUT /api/memory/:agentId
+app.put('/api/memory/:agentId', (req, res) => {
+  const { content } = req.body;
+  if (content === undefined) return res.status(400).json({ error: 'content required' });
+  try {
+    const before = indexer.getMemory(req.params.agentId) || {};
+    const result = indexer.putMemory(req.params.agentId, content);
+    recordTimeline({
+      agent: req.params.agentId,
+      type: 'memory_write',
+      targetId: req.params.agentId,
+      summary: `更新记忆: ${req.params.agentId}`,
+      before: { content: before.content || '' },
+      after: { content },
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Budget helpers ──────────────────────────────────────────────
 
 const BUDGET_CONFIG_FILE = path.join(RUNTIME_DIR, 'budget-config.json');
@@ -605,6 +680,46 @@ app.patch('/api/settings/budget', (req, res) => {
   res.json({ updated: true, config });
 });
 
+// ── T16: Feishu notify helpers ────────────────────────────────
+function loadNotifyConfig() {
+  try { return JSON.parse(fs.readFileSync(NOTIFY_CONFIG_FILE, 'utf8')); }
+  catch { return { webhookUrl: '', level: 'critical', enabled: false }; }
+}
+
+function saveNotifyConfig(cfg) {
+  fs.writeFileSync(NOTIFY_CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf8');
+}
+
+function sendFeishuMessage(cfg, title, body) {
+  if (!cfg.enabled || !cfg.webhookUrl) return Promise.resolve({ skipped: true });
+  return new Promise((resolve) => {
+    let urlObj;
+    try { urlObj = new URL(cfg.webhookUrl); } catch { return resolve({ ok: false, error: 'invalid URL' }); }
+    const mod = urlObj.protocol === 'https:' ? require('https') : require('http');
+    const payload = JSON.stringify({ msg_type: 'text', content: { text: `[OpenClaw Control Center]\n${title}\n${body}` } });
+    const req = mod.request({
+      hostname: urlObj.hostname,
+      port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+      path: urlObj.pathname + urlObj.search,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+    }, (r) => {
+      let data = '';
+      r.on('data', d => { data += d; });
+      r.on('end', () => resolve({ ok: r.statusCode < 300, status: r.statusCode }));
+    });
+    req.on('error', e => resolve({ ok: false, error: e.message }));
+    req.write(payload);
+    req.end();
+  });
+}
+
+// ── T18: Access config helper ─────────────────────────────────
+function loadAccessConfig() {
+  try { return JSON.parse(fs.readFileSync(ACCESS_CONFIG_FILE, 'utf8')); }
+  catch { return { tokenHash: null, enabled: false }; }
+}
+
 function parseChannelProbe(text) {
   const result = [];
   const lines = text.split('\n');
@@ -655,7 +770,37 @@ function runCronRuns(jobId, limit) {
   });
 }
 
-app.get('/api/action-queue', (req, res) => res.json([]));
+app.get('/api/action-queue', (req, res) => {
+  const acks = readJson('acks.json') || [];
+  res.json(acks);
+});
+
+// POST /api/action-queue/:itemId/ack
+app.post('/api/action-queue/:itemId/ack', (req, res) => {
+  const acks = readJson('acks.json') || [];
+  const { snoozeUntil } = req.body || {};
+  const existing = acks.find(a => a.itemId === req.params.itemId);
+  if (existing) {
+    existing.ackedAt = new Date().toISOString();
+    if (snoozeUntil) existing.snoozeUntil = snoozeUntil;
+  } else {
+    acks.push({
+      itemId: req.params.itemId,
+      ackedAt: new Date().toISOString(),
+      ...(snoozeUntil ? { snoozeUntil } : {}),
+    });
+  }
+  writeJson('acks.json', acks);
+  recordTimeline({
+    agent: 'system',
+    type: 'exception_ack',
+    targetId: req.params.itemId,
+    summary: `确认异常: ${req.params.itemId}`,
+    before: {},
+    after: { ackedAt: new Date().toISOString() },
+  });
+  res.json({ ok: true, itemId: req.params.itemId });
+});
 
 // ── Live Sessions ─────────────────────────────────────────────
 
@@ -689,6 +834,232 @@ sessionWatcher.on('event', (ev) => {
   for (const client of _sseClients) {
     client.write(payload);
   }
+});
+
+// ── T14: Usage Summary & CSV Export ──────────────────────────
+
+function computeUsageSummary() {
+  const snap = poll.getSnapshot();
+  const sessions = snap?.sessions?._raw || [];
+  const agentMap = {};
+  for (const s of sessions) {
+    const a = s.agentId || 'unknown';
+    if (!agentMap[a]) agentMap[a] = { agentId: a, sessionCount: 0, inputTokens: 0, outputTokens: 0, totalTokens: 0, cost: 0 };
+    agentMap[a].sessionCount++;
+    agentMap[a].inputTokens += s.inputTokens || 0;
+    agentMap[a].outputTokens += s.outputTokens || 0;
+    agentMap[a].totalTokens += (s.inputTokens || 0) + (s.outputTokens || 0);
+    agentMap[a].cost += s.cost || 0;
+  }
+  return Object.values(agentMap);
+}
+
+app.get('/api/usage/summary', (req, res) => {
+  const agents = computeUsageSummary();
+  const total = agents.reduce((acc, a) => ({
+    sessionCount: acc.sessionCount + a.sessionCount,
+    totalTokens: acc.totalTokens + a.totalTokens,
+    cost: acc.cost + a.cost,
+  }), { sessionCount: 0, totalTokens: 0, cost: 0 });
+
+  // Project dimension: aggregate from runtime/tasks.json using ownerAgentId + projectId
+  const tasks = readJson('tasks.json') || [];
+  const projects = readJson('projects.json') || [];
+  const projectMap = {};
+  for (const t of tasks) {
+    if (!t.projectId) continue;
+    const proj = projects.find(p => p.projectId === t.projectId);
+    const key = t.projectId;
+    if (!projectMap[key]) {
+      projectMap[key] = {
+        projectId: key,
+        projectName: proj ? proj.name : key,
+        taskCount: 0,
+        agentIds: new Set(),
+      };
+    }
+    projectMap[key].taskCount++;
+    if (t.ownerAgentId) projectMap[key].agentIds.add(t.ownerAgentId);
+  }
+
+  // Join agent token usage into project breakdown (by tasks owned per agent)
+  const agentUsageMap = Object.fromEntries(agents.map(a => [a.agentId, a]));
+  const byProject = Object.values(projectMap).map(p => {
+    // Estimate: sum usage of agents who have tasks in this project, weighted by task share
+    let totalTokens = 0, cost = 0;
+    for (const agentId of p.agentIds) {
+      const usage = agentUsageMap[agentId];
+      if (!usage) continue;
+      // Weight = tasks this agent has in this project / total tasks this agent owns
+      const agentTotalTasks = tasks.filter(t => t.ownerAgentId === agentId).length || 1;
+      const agentProjectTasks = tasks.filter(t => t.ownerAgentId === agentId && t.projectId === p.projectId).length;
+      const weight = agentProjectTasks / agentTotalTasks;
+      totalTokens += Math.round(usage.totalTokens * weight);
+      cost += usage.cost * weight;
+    }
+    return {
+      projectId: p.projectId,
+      projectName: p.projectName,
+      taskCount: p.taskCount,
+      agentIds: [...p.agentIds],
+      estimatedTokens: totalTokens,
+      estimatedCost: cost,
+      note: 'estimated — weighted by task ownership ratio',
+    };
+  });
+
+  res.json({ agents, total, byProject, generatedAt: new Date().toISOString() });
+});
+
+app.get('/api/usage/export.csv', (req, res) => {
+  const agents = computeUsageSummary();
+  const rows = [
+    ['agentId', 'sessionCount', 'inputTokens', 'outputTokens', 'totalTokens', 'estimatedCost'],
+    ...agents.map(a => [a.agentId, a.sessionCount, a.inputTokens, a.outputTokens, a.totalTokens, a.cost.toFixed(6)]),
+  ];
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="usage-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send(rows.map(r => r.join(',')).join('\n'));
+});
+
+// ── T15: Collaboration Hall ───────────────────────────────────
+
+const HALL_AGENTS = new Set(['main', 'forge', 'reviewer', 'sentinel']);
+
+app.get('/api/hall', (req, res) => {
+  const recent = sessionWatcher.getRecentEvents(500);
+
+  // Aggregate per-agent activity
+  const agentMap = {};
+  for (const ev of recent) {
+    const a = ev.agentId;
+    if (!agentMap[a]) agentMap[a] = { agentId: a, eventCount: 0, sessionIds: new Set(), lastActivity: null };
+    agentMap[a].eventCount++;
+    agentMap[a].sessionIds.add(ev.sessionId);
+    agentMap[a].lastActivity = ev.ts;
+  }
+  const agents = Object.values(agentMap).map(a => ({
+    agentId: a.agentId,
+    eventCount: a.eventCount,
+    sessionCount: a.sessionIds.size,
+    lastActivity: a.lastActivity,
+  }));
+
+  // Precise spawn links: Agent tool calls + session_opened with parentAgentId
+  const preciseEvents = sessionWatcher.getSpawnEvents(200);
+  const spawnLinks = preciseEvents.map(ev => {
+    if (ev.type === 'spawn') {
+      return { from: ev.agentId, to: ev.targetAgent, ts: ev.ts, sessionId: ev.sessionId, via: 'agent_tool', description: ev.description || '' };
+    }
+    if (ev.type === 'session_opened' && ev.parentAgentId) {
+      return { from: ev.parentAgentId, to: ev.agentId, ts: ev.ts, sessionId: ev.sessionId, via: 'session_announce', description: '' };
+    }
+    return null;
+  }).filter(Boolean);
+
+  // Fallback: text-regex when no precise events available (e.g. older sessions)
+  if (spawnLinks.length === 0) {
+    const seen = new Set();
+    for (const ev of recent) {
+      if (ev.type === 'message' && ev.text) {
+        const m = ev.text.match(/\b(spawned?|invoke[sd]?|启动|called)\s+(\w+)/i);
+        if (m && HALL_AGENTS.has(m[2]) && m[2] !== ev.agentId) {
+          const key = `${ev.agentId}->${m[2]}-${ev.sessionId}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            spawnLinks.push({ from: ev.agentId, to: m[2], ts: ev.ts, sessionId: ev.sessionId, via: 'text_heuristic', description: '' });
+          }
+        }
+      }
+    }
+  }
+
+  res.json({ agents, spawnLinks, eventTotal: recent.length, spawnSource: preciseEvents.length > 0 ? 'precise' : 'heuristic' });
+});
+
+// ── T16: Feishu 推送 routes ───────────────────────────────────
+
+app.get('/api/settings/notify', (req, res) => {
+  const cfg = loadNotifyConfig();
+  res.json({ enabled: cfg.enabled, level: cfg.level, webhookSet: !!cfg.webhookUrl });
+});
+
+app.patch('/api/settings/notify', (req, res) => {
+  const cfg = loadNotifyConfig();
+  const { webhookUrl, level, enabled } = req.body;
+  if (webhookUrl !== undefined) cfg.webhookUrl = webhookUrl;
+  if (level !== undefined) cfg.level = level;
+  if (enabled !== undefined) cfg.enabled = !!enabled;
+  saveNotifyConfig(cfg);
+  res.json({ ok: true, enabled: cfg.enabled, level: cfg.level, webhookSet: !!cfg.webhookUrl });
+});
+
+app.post('/api/settings/notify/test', async (req, res) => {
+  const cfg = loadNotifyConfig();
+  if (!cfg.webhookUrl) return res.status(400).json({ error: 'webhook URL not configured' });
+  const result = await sendFeishuMessage({ ...cfg, enabled: true }, '测试通知', 'OpenClaw Control Center 连接正常 ✓');
+  res.json(result);
+});
+
+// ── T17: Audit Export ─────────────────────────────────────────
+
+app.get('/api/export/runtime', (req, res) => {
+  const date = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="runtime-export-${date}.zip"`);
+
+  const archive = archiver('zip', { zlib: { level: 6 } });
+  archive.on('error', (err) => {
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+  });
+  archive.pipe(res);
+
+  // Include all runtime/*.json and *.log files
+  try {
+    fs.readdirSync(RUNTIME_DIR)
+      .filter(f => f.endsWith('.json') || f.endsWith('.log'))
+      .forEach(f => archive.file(path.join(RUNTIME_DIR, f), { name: f }));
+  } catch {}
+
+  // Include a manifest
+  const manifest = JSON.stringify({ exportedAt: new Date().toISOString(), source: 'openclaw-control-center' }, null, 2);
+  archive.append(manifest, { name: 'manifest.json' });
+
+  archive.finalize();
+});
+
+app.get('/api/export/timeline.csv', (req, res) => {
+  let entries = [];
+  try {
+    const raw = fs.readFileSync(path.join(RUNTIME_DIR, 'timeline.log'), 'utf8');
+    entries = raw.trim().split('\n').filter(Boolean)
+      .map(l => { try { return JSON.parse(l); } catch { return null; } })
+      .filter(Boolean);
+  } catch {}
+  const csvEsc = s => `"${String(s || '').replace(/"/g, '""')}"`;
+  const rows = [
+    ['ts', 'agent', 'type', 'targetId', 'summary'],
+    ...entries.map(e => [e.ts, e.agent, e.type, e.targetId, csvEsc(e.summary)]),
+  ];
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="timeline-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send(rows.map(r => r.join(',')).join('\n'));
+});
+
+// ── T18: 远程访问 routes ──────────────────────────────────────
+
+app.get('/api/settings/access', (req, res) => {
+  const cfg = loadAccessConfig();
+  res.json({ enabled: cfg.enabled, hasToken: !!cfg.tokenHash });
+});
+
+app.patch('/api/settings/access', (req, res) => {
+  const cfg = loadAccessConfig();
+  const { token, enabled } = req.body;
+  if (token !== undefined) cfg.tokenHash = token ? crypto.createHash('sha256').update(token).digest('hex') : null;
+  if (enabled !== undefined) cfg.enabled = !!enabled;
+  fs.writeFileSync(ACCESS_CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf8');
+  res.json({ ok: true, enabled: cfg.enabled, hasToken: !!cfg.tokenHash });
 });
 
 // ── Start ─────────────────────────────────────────────────────

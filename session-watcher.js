@@ -97,7 +97,11 @@ class SessionWatcher extends EventEmitter {
     const base = { sessionId, agentId, ts };
 
     if (raw.type === 'session') {
-      return { ...base, type: 'session_opened', cwd: raw.cwd || null };
+      const ev = { ...base, type: 'session_opened', cwd: raw.cwd || null };
+      // Capture parent linkage for spawn chain reconstruction
+      if (raw.parentSessionId) ev.parentSessionId = raw.parentSessionId;
+      if (raw.parentAgentId || raw.spawnedBy) ev.parentAgentId = raw.parentAgentId || raw.spawnedBy;
+      return ev;
     }
 
     if (raw.type === 'message') {
@@ -112,8 +116,23 @@ class SessionWatcher extends EventEmitter {
 
       // Emit one event per tool call
       if (toolCalls.length > 0) {
-        // Return the first one; watcher will be called again for file change
         const tc = toolCalls[0];
+
+        // Detect Agent spawn via Agent tool call (deterministic)
+        if ((tc.name === 'Agent' || tc.name === 'agent') && tc.arguments) {
+          const targetAgent = tc.arguments.subagent_type || tc.arguments.agent_type || null;
+          if (targetAgent) {
+            return {
+              ...base,
+              type: 'spawn',
+              targetAgent,
+              callId: tc.id,
+              description: String(tc.arguments.description || tc.arguments.prompt || '').slice(0, 120),
+              usage: raw.usage ? { total: raw.usage.totalTokens, cost: raw.usage.cost?.total } : null,
+            };
+          }
+        }
+
         const target = getToolTarget(tc.name, tc.arguments);
         return {
           ...base,
@@ -121,7 +140,7 @@ class SessionWatcher extends EventEmitter {
           tool: tc.name,
           target,
           callId: tc.id,
-          status: 'ok', // we see it after it completes
+          status: 'ok',
           usage: raw.usage ? { total: raw.usage.totalTokens, cost: raw.usage.cost?.total } : null,
         };
       }
@@ -160,6 +179,13 @@ class SessionWatcher extends EventEmitter {
 
   getSessionEvents(sessionId, limit = 200) {
     return this._events.filter(e => e.sessionId === sessionId).slice(-limit);
+  }
+
+  // Returns precise spawn events: Agent tool calls + session announces with parentAgentId
+  getSpawnEvents(limit = 200) {
+    return this._events
+      .filter(e => e.type === 'spawn' || (e.type === 'session_opened' && e.parentAgentId))
+      .slice(-limit);
   }
 
   stop() {
