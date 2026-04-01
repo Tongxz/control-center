@@ -824,6 +824,97 @@
     .health-ok .check {
       font-size: 18px;
     }
+
+    /* ── Live Sessions ── */
+    .sessions-layout {
+      display: flex;
+      height: calc(100vh - 0px);
+      overflow: hidden;
+      margin: -32px;
+    }
+    .sessions-fleet {
+      width: 320px;
+      flex-shrink: 0;
+      border-right: 1px solid #2a2a2a;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #111;
+    }
+    .sessions-inspector {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sf-header {
+      padding: 10px 12px;
+      border-bottom: 1px solid #2a2a2a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #141414;
+      flex-shrink: 0;
+    }
+    .sf-title { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; flex: 1; }
+    .sse-dot { width: 7px; height: 7px; border-radius: 50%; background: #444; flex-shrink: 0; }
+    .sse-dot.connected { background: #4caf50; }
+    .sf-filter-bar {
+      display: flex; gap: 4px; padding: 8px 10px;
+      border-bottom: 1px solid #1e1e1e; flex-shrink: 0;
+    }
+    .sf-filter {
+      padding: 2px 8px; border: 1px solid #2a2a2a; border-radius: 3px;
+      background: none; color: #666; font-size: 11px; cursor: pointer; font-family: inherit;
+    }
+    .sf-filter.active { background: #1e2c3d; border-color: #4da6ff; color: #4da6ff; }
+    .sf-scroll { overflow-y: auto; flex: 1; }
+    .agent-group { border-bottom: 1px solid #1a1a1a; }
+    .agent-group-hdr {
+      padding: 7px 12px; background: #141414;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .ag-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .ag-dot.busy { background: #4da6ff; }
+    .ag-dot.idle { background: #3a3a3a; }
+    .ag-name { font-size: 12px; font-weight: 600; color: #bbb; flex: 1; }
+    .ag-count { font-size: 11px; color: #555; }
+    .sess-row {
+      padding: 6px 12px 6px 26px; display: flex; align-items: center; gap: 6px;
+      cursor: pointer; border-bottom: 1px solid #181818; transition: background 0.1s;
+    }
+    .sess-row:hover { background: #1a1a1a; }
+    .sess-row.selected { background: #1b2a3d; }
+    .sess-id { font-size: 10px; color: #444; font-family: monospace; width: 70px; flex-shrink: 0; overflow: hidden; }
+    .sess-task { flex: 1; font-size: 12px; color: #aaa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sess-age { font-size: 10px; color: #555; flex-shrink: 0; }
+    .sess-badge { font-size: 10px; padding: 1px 5px; border-radius: 2px; flex-shrink: 0; }
+    .badge-active { background: #162616; color: #4caf50; }
+    .badge-stalled { background: #2e2a14; color: #ffa726; }
+    .badge-error { background: #2a1414; color: #ef5350; }
+    /* Inspector */
+    .si-hdr {
+      padding: 10px 14px; border-bottom: 1px solid #2a2a2a;
+      background: #141414; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .si-sid { font-family: monospace; font-size: 11px; color: #666; }
+    .si-agent { padding: 2px 7px; border-radius: 3px; font-size: 11px; font-weight: 600; background: #1e2c3d; color: #4da6ff; }
+    .si-live { padding: 2px 6px; border-radius: 3px; font-size: 10px; background: #162616; color: #4caf50; margin-left: auto; }
+    .si-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: #3a3a3a; font-size: 13px; }
+    .si-scroll { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+    .ev-msg { padding: 7px 9px; border-radius: 4px; }
+    .ev-msg.user { background: #1c1c1c; border-left: 2px solid #444; }
+    .ev-msg.assistant { background: #151e2d; border-left: 2px solid #4da6ff; }
+    .ev-role { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #555; margin-bottom: 3px; }
+    .ev-msg.assistant .ev-role { color: #4da6ff; }
+    .ev-text { font-size: 12px; color: #ccc; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+    .ev-tool { padding: 5px 9px; font-size: 12px; color: #888; display: flex; align-items: center; gap: 6px; }
+    .ev-tool-name { font-family: monospace; color: #9b8fe8; font-weight: 600; }
+    .ev-tool-target { color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .ev-tool-ok { color: #4caf50; flex-shrink: 0; }
+    .ev-tool-err { color: #ef5350; flex-shrink: 0; }
+    .ev-ts { font-size: 10px; color: #3a3a3a; margin-bottom: 2px; }
+    .si-stalled { padding: 7px 10px; background: #2a2514; border: 1px solid #4a4020; border-radius: 3px; font-size: 11px; color: #ffa726; }
   </style>
 </head>
 <body>
@@ -844,6 +935,7 @@
   <button class="tab-btn" data-tab="settings">设置</button>
   <button class="tab-btn" data-tab="approvals">审批</button>
   <button class="tab-btn" data-tab="timeline">Timeline</button>
+  <button class="tab-btn" data-tab="sessions">实时会话</button>
 </div>
 
 <!-- Content -->
@@ -862,6 +954,25 @@
   // ── Panel Content Templates ──────────────────────────────────
 
   const panels = {
+    sessions: `
+      <div class="sessions-layout">
+        <div class="sessions-fleet">
+          <div class="sf-header">
+            <span class="sf-title">实时会话</span>
+            <div class="sse-dot" id="sse-dot"></div>
+          </div>
+          <div class="sf-filter-bar">
+            <button class="sf-filter active" data-filter="all">全部</button>
+            <button class="sf-filter" data-filter="active">活跃</button>
+            <button class="sf-filter" data-filter="stalled">停滞</button>
+          </div>
+          <div class="sf-scroll" id="fleet-scroll"></div>
+        </div>
+        <div class="sessions-inspector" id="session-inspector">
+          <div class="si-empty">选择一个会话查看详情</div>
+        </div>
+      </div>
+    `,
     tasks: `
       <h1>任务</h1>
       <div id="tasks-container">
@@ -1151,29 +1262,29 @@
 
       // Budget
       const budget = health.budget;
-      let budgetHTML = \`<div class="settings-row"><div><div class="label">Token 用量</div><div class="desc">No usage data available</div></div><span class="badge badge-gray">N/A</span></div>\`;
+      let budgetHTML = `<div class="settings-row"><div><div class="label">Token 用量</div><div class="desc">No usage data available</div></div><span class="badge badge-gray">N/A</span></div>`;
       if (budget) {
         const pct = budget.percentUsed || 0;
         const limit = budget.monthlyLimit || 1000000;
         const statusClass = budget.status === 'exceeded' ? 'badge-red' : budget.status === 'warning' ? 'badge-yellow' : 'badge-green';
         const statusLabel = budget.status === 'exceeded' ? 'EXCEEDED' : budget.status === 'warning' ? 'WARNING' : 'OK';
         const statusNote = budget.status === 'exceeded' ? 'Budget exceeded — please review usage'
-          : budget.status === 'warning' ? \`Approaching limit (warn at \${budget.warnAtPercent}%)\`
-          : \`Within budget (warn at \${budget.warnAtPercent}%)\`;
+          : budget.status === 'warning' ? `Approaching limit (warn at ${budget.warnAtPercent}%)`
+          : `Within budget (warn at ${budget.warnAtPercent}%)`;
         const barWidth = Math.min(pct, 100);
         const barColor = budget.status === 'exceeded' ? '#f04040' : budget.status === 'warning' ? '#f0c040' : '#3ddc84';
-        budgetHTML = \`<div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+        budgetHTML = `<div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <div>
               <div class="label">Token 用量 <span style="font-size:11px;color:#666;">（本月）</span></div>
-              <div class="desc">\${budget.sessionCount || 0} sessions · input \${formatTokens(budget.inputTokens)} + output \${formatTokens(budget.outputTokens)}</div>
+              <div class="desc">${budget.sessionCount || 0} sessions · input ${formatTokens(budget.inputTokens)} + output ${formatTokens(budget.outputTokens)}</div>
             </div>
-            <span class="badge \${statusClass}">\${statusLabel}</span>
+            <span class="badge ${statusClass}">${statusLabel}</span>
           </div>
-          <div style="background:#111;border-radius:4px;height:8px;overflow:hidden;"><div style="width:\${barWidth}%;height:100%;background:\${barColor};transition:width 0.3s;"></div></div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;"><span>\${formatTokens(budget.totalTokens || 0)} used</span><span>\${formatTokens(limit)} limit</span><span>\${pct}%</span></div>
-          <div style="font-size:11px;color:\${budget.status === 'exceeded' ? '#f04040' : budget.status === 'warning' ? '#f0c040' : '#555'};">\${statusNote}</div>
-        </div>\`;
+          <div style="background:#111;border-radius:4px;height:8px;overflow:hidden;"><div style="width:${barWidth}%;height:100%;background:${barColor};transition:width 0.3s;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;"><span>${formatTokens(budget.totalTokens || 0)} used</span><span>${formatTokens(limit)} limit</span><span>${pct}%</span></div>
+          <div style="font-size:11px;color:${budget.status === 'exceeded' ? '#f04040' : budget.status === 'warning' ? '#f0c040' : '#555'};">${statusNote}</div>
+        </div>`;
       }
 
       panel.innerHTML = `
@@ -1196,7 +1307,7 @@
         </div>
 
         <h2>Token 用量</h2>
-        \${budgetHTML}
+        ${budgetHTML}
 
         <h2>频道</h2>
         <div class="settings-row">
@@ -2081,6 +2192,7 @@
       memory: panels.memory,
       approvals: panels.approvals,
       timeline: panels.timeline,
+      sessions: panels.sessions,
     };
     content.innerHTML = staticPanels[tab] || '<div class="empty">Panel content goes here</div>';
     buttons.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -2096,6 +2208,7 @@
     else if (tab === 'projects') loadProjects();
     else if (tab === 'approvals') loadApprovals();
     else if (tab === 'timeline') loadTimeline();
+    else if (tab === 'sessions') loadSessions();
   }
 
   // Patch button clicks to use new injection
@@ -2112,6 +2225,210 @@
   // Patch the default showPanel call
   content.innerHTML = '<div id="panel-overview"></div>';
   loadOverview();
+
+  // ── Live Sessions ─────────────────────────────────────────────
+
+  let _sseConn = null;     // active EventSource
+  let _sessions = [];      // from /api/sessions/list
+  let _events = [];        // all events from SSE (fleet-wide)
+  let _selectedSid = null; // currently selected sessionId
+  let _filter = 'all';     // all | active | stalled
+  const STALL_MS = 60_000;
+
+  function loadSessions() {
+    if (_sseConn) { _sseConn.close(); _sseConn = null; }
+    _events = [];
+    _sessions = [];
+    _selectedSid = null;
+
+    // Load session list, then open SSE
+    fetch('/api/sessions/list').then(r => r.json()).then(data => {
+      _sessions = data || [];
+      _renderFleet();
+    }).catch(() => {});
+
+    _sseConn = new EventSource('/api/sessions/stream');
+    _sseConn.onopen = () => {
+      const dot = document.getElementById('sse-dot');
+      if (dot) dot.classList.add('connected');
+    };
+    _sseConn.onerror = () => {
+      const dot = document.getElementById('sse-dot');
+      if (dot) dot.classList.remove('connected');
+    };
+    _sseConn.onmessage = (e) => {
+      try {
+        const ev = JSON.parse(e.data);
+        _events.push(ev);
+        if (_events.length > 1000) _events = _events.slice(-1000);
+
+        // Update last-seen for this session
+        const sess = _sessions.find(s => s.sessionId === ev.sessionId);
+        if (sess) { sess._lastEventTs = Date.now(); }
+        else {
+          // New session seen via events — add placeholder
+          _sessions.push({ sessionId: ev.sessionId, agentId: ev.agentId, _lastEventTs: Date.now(), ageMs: 0 });
+        }
+
+        _renderFleet();
+        if (_selectedSid === ev.sessionId) _renderInspector(ev.sessionId);
+      } catch {}
+    };
+
+    // Wire filter buttons
+    document.querySelectorAll('.sf-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        _filter = btn.dataset.filter;
+        document.querySelectorAll('.sf-filter').forEach(b => b.classList.toggle('active', b.dataset.filter === _filter));
+        _renderFleet();
+      });
+    });
+  }
+
+  function _sessionStatus(sess) {
+    const age = sess._lastEventTs ? Date.now() - sess._lastEventTs : null;
+    if (age !== null && age > STALL_MS) return 'stalled';
+    return 'active';
+  }
+
+  function _renderFleet() {
+    const scroll = document.getElementById('fleet-scroll');
+    if (!scroll) return;
+
+    // Group by agentId
+    const byAgent = {};
+    for (const sess of _sessions) {
+      const aid = sess.agentId || 'unknown';
+      if (!byAgent[aid]) byAgent[aid] = [];
+      byAgent[aid].push(sess);
+    }
+
+    // Filter
+    const visibleSessions = _sessions.filter(s => {
+      if (_filter === 'all') return true;
+      return _sessionStatus(s) === _filter;
+    });
+
+    const agentOrder = ['main', 'forge', 'reviewer', 'sentinel'];
+    const agentIds = [...new Set([...agentOrder, ...Object.keys(byAgent)])].filter(a => byAgent[a]);
+
+    let html = '';
+    for (const agentId of agentIds) {
+      const agentSessions = (byAgent[agentId] || []).filter(s => visibleSessions.includes(s));
+      const allAgentSessions = byAgent[agentId] || [];
+      const isBusy = allAgentSessions.length > 0;
+
+      html += `<div class="agent-group">
+        <div class="agent-group-hdr">
+          <div class="ag-dot ${isBusy ? 'busy' : 'idle'}"></div>
+          <span class="ag-name">${agentId}</span>
+          <span class="ag-count">${allAgentSessions.length} 个会话</span>
+        </div>`;
+
+      for (const sess of agentSessions) {
+        const sid = sess.sessionId;
+        const shortId = sid.slice(0, 8);
+        const status = _sessionStatus(sess);
+        const badgeClass = status === 'stalled' ? 'badge-stalled' : 'badge-active';
+        const badgeText = status === 'stalled' ? '停滞' : '活跃';
+        const ageMs = sess.ageMs || 0;
+        const ageStr = ageMs > 0 ? _fmtAge(ageMs) : '—';
+        // Last meaningful message as task hint
+        const lastMsg = [..._events].reverse().find(e => e.sessionId === sid && e.type === 'message' && e.role === 'user');
+        const hint = lastMsg ? lastMsg.text.slice(0, 60) : (sess.key || sid.slice(0, 16) + '...');
+        const sel = _selectedSid === sid ? ' selected' : '';
+
+        html += `<div class="sess-row${sel}" data-sid="${sid}">
+          <span class="sess-id">${shortId}</span>
+          <span class="sess-task">${_esc(hint)}</span>
+          <span class="sess-age">${ageStr}</span>
+          <span class="sess-badge ${badgeClass}">${badgeText}</span>
+        </div>`;
+      }
+      html += '</div>';
+    }
+
+    if (!html) {
+      html = '<div style="padding:20px;color:#444;font-size:12px;text-align:center">暂无活跃会话</div>';
+    }
+
+    scroll.innerHTML = html;
+
+    // Bind click handlers
+    scroll.querySelectorAll('.sess-row').forEach(row => {
+      row.addEventListener('click', () => {
+        _selectedSid = row.dataset.sid;
+        _renderFleet();
+        _renderInspector(_selectedSid);
+      });
+    });
+  }
+
+  function _renderInspector(sessionId) {
+    const inspector = document.getElementById('session-inspector');
+    if (!inspector) return;
+
+    const sess = _sessions.find(s => s.sessionId === sessionId);
+    const evs = _events.filter(e => e.sessionId === sessionId);
+    const status = sess ? _sessionStatus(sess) : 'active';
+
+    let html = `<div class="si-hdr">
+      <span class="si-sid">${sessionId.slice(0, 18)}…</span>
+      <span class="si-agent">${sess?.agentId || '?'}</span>
+      <span class="si-live">● live</span>
+    </div>
+    <div class="si-scroll" id="si-scroll">`;
+
+    if (status === 'stalled') {
+      html += `<div class="si-stalled">⚠ 已停滞 — 超过 60 秒无新事件</div>`;
+    }
+
+    if (evs.length === 0) {
+      html += `<div style="color:#444;font-size:12px;padding:12px">暂无事件记录</div>`;
+    }
+
+    for (const ev of evs) {
+      const timeStr = new Date(ev.ts).toLocaleTimeString('zh', { hour12: false });
+      if (ev.type === 'session_opened') {
+        html += `<div style="color:#3a3a3a;font-size:11px;padding:4px 0">─── 会话开始 ${timeStr} ───</div>`;
+      } else if (ev.type === 'message') {
+        const roleLabel = ev.role === 'user' ? '用户' : '助手';
+        html += `<div class="ev-msg ${ev.role}">
+          <div class="ev-ts">${timeStr}</div>
+          <div class="ev-role">${roleLabel}</div>
+          <div class="ev-text">${_esc(ev.text)}</div>
+        </div>`;
+      } else if (ev.type === 'tool_call') {
+        const statusIcon = ev.status === 'error' ? '<span class="ev-tool-err">✗</span>' : '<span class="ev-tool-ok">✓</span>';
+        html += `<div class="ev-tool">
+          <span class="ev-ts" style="flex-shrink:0">${timeStr}</span>
+          <span class="ev-tool-name">${_esc(ev.tool)}</span>
+          <span class="ev-tool-target">${_esc(ev.target || '')}</span>
+          ${statusIcon}
+        </div>`;
+      }
+    }
+
+    html += '</div>';
+    inspector.innerHTML = html;
+
+    // Auto-scroll to bottom
+    const scroll = document.getElementById('si-scroll');
+    if (scroll) scroll.scrollTop = scroll.scrollHeight;
+  }
+
+  function _fmtAge(ms) {
+    const s = Math.floor(ms / 1000);
+    const m = Math.floor(s / 60);
+    const h = Math.floor(m / 60);
+    if (h > 0) return `${h}h${m % 60}m`;
+    if (m > 0) return `${m}m`;
+    return `${s}s`;
+  }
+
+  function _esc(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
 </script>
 
 </body>

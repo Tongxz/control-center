@@ -6,8 +6,10 @@ const { spawn, execSync } = require('child_process');
 const { nanoid } = require('nanoid');
 const indexer = require('./indexer');
 const poll = require('./poll');
+const sessionWatcher = require('./session-watcher');
 
 const RUNTIME_DIR = path.join(__dirname, 'runtime');
+const TASKS_SNAPSHOT_MAX_AGE_MS = 2 * 60 * 1000;
 
 // ── JSON file helpers ─────────────────────────────────────────
 
@@ -23,6 +25,86 @@ function readJson(relPath) {
 function writeJson(relPath, data) {
   const filePath = path.join(RUNTIME_DIR, relPath);
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+}
+
+
+function extractJsonPayload(raw) {
+  if (!raw) return null;
+  const trimmed = String(raw).trim();
+  for (const marker of ['{', '[']) {
+    const idx = trimmed.indexOf(marker);
+    if (idx !== -1) {
+      try {
+        return JSON.parse(trimmed.slice(idx));
+      } catch {
+        // keep trying
+      }
+    }
+  }
+  return null;
+}
+
+function runOpenClawJson(args, { allowMissingCommand = false } = {}) {
+  return new Promise((resolve) => {
+    const proc = spawn('openclaw', args, { shell: true });
+    let stdout = '';
+    let stderr = '';
+
+    proc.stdout.on('data', (d) => { stdout += d; });
+    proc.stderr.on('data', (d) => { stderr += d; });
+    proc.on('error', (err) => resolve({ ok: false, error: err.message, code: -1, stdout, stderr }));
+    proc.on('close', (code) => {
+      const payload = extractJsonPayload(stdout || stderr);
+      const combined = `${stdout}
+${stderr}`;
+      if (code === 0 && payload !== null) {
+        return resolve({ ok: true, data: payload, stdout, stderr, code });
+      }
+      if (allowMissingCommand && /unknown command 'flows'|unknown command 'flow'|Did you mean logs\?/i.test(combined)) {
+        return resolve({ ok: false, missingCommand: true, error: combined.trim(), stdout, stderr, code });
+      }
+      resolve({ ok: false, error: combined.trim() || `openclaw ${args.join(' ')} failed`, data: payload, stdout, stderr, code });
+    });
+  });
+}
+
+function getSnapshotFileMeta(relPath) {
+  const filePath = path.join(RUNTIME_DIR, relPath);
+  try {
+    return { filePath, stat: fs.statSync(filePath) };
+  } catch {
+    return null;
+  }
+}
+
+function normalizeTasksPayload(payload) {
+  if (Array.isArray(payload)) return { tasks: payload, count: payload.length };
+  const tasks = Array.isArray(payload?.tasks) ? payload.tasks : [];
+  const count = typeof payload?.count === 'number' ? payload.count : tasks.length;
+  return { tasks, count };
+}
+
+async function getLiveTasksPayload() {
+  const result = await runOpenClawJson(['tasks', 'list', '--json']);
+  if (!result.ok) throw new Error(result.error || 'failed to load tasks from openclaw');
+  return normalizeTasksPayload(result.data);
+}
+
+async function getPreferredTasksPayload() {
+  const meta = getSnapshotFileMeta('tasks-snapshot.json');
+  if (meta) {
+    const ageMs = Date.now() - meta.stat.mtimeMs;
+    const cached = normalizeTasksPayload(readJson('tasks-snapshot.json'));
+    if (ageMs <= TASKS_SNAPSHOT_MAX_AGE_MS && cached.tasks.length) {
+      return { ...cached, source: 'snapshot', stale: false };
+    }
+    if (ageMs <= TASKS_SNAPSHOT_MAX_AGE_MS) {
+      return { ...cached, source: 'snapshot', stale: false };
+    }
+  }
+
+  const live = await getLiveTasksPayload();
+  return { ...live, source: 'live', stale: false };
 }
 
 // ── JSONL append helper ───────────────────────────────────────
@@ -67,7 +149,34 @@ app.get('/api/agents', (req, res) => {
   res.json(snap.agents);
 });
 
-app.get('/api/tasks', (req, res) => res.json(readJson('tasks.json') || []));
+app.get('/api/tasks', async (req, res) => {
+  try {
+    const payload = await getPreferredTasksPayload();
+    res.json({ tasks: payload.tasks, count: payload.count });
+  } catch (err) {
+    res.status(500).json({ error: err.message, tasks: [], count: 0 });
+  }
+});
+
+app.get('/api/tasks/:taskId', async (req, res) => {
+  const result = await runOpenClawJson(['tasks', 'show', req.params.taskId, '--json']);
+  if (!result.ok) {
+    return res.status(result.code === 0 ? 500 : 404).json({ error: result.error || 'task not found' });
+  }
+  res.json(result.data);
+});
+
+app.get('/api/flows', async (req, res) => {
+  const result = await runOpenClawJson(['flows', 'list', '--json'], { allowMissingCommand: true });
+  if (result.missingCommand) {
+    return res.json({ flows: [], note: 'flows not available' });
+  }
+  if (!result.ok) {
+    return res.status(500).json({ error: result.error || 'failed to load flows', flows: [] });
+  }
+  const flows = Array.isArray(result.data) ? result.data : (Array.isArray(result.data?.flows) ? result.data.flows : []);
+  res.json({ flows, count: flows.length });
+});
 
 // POST /api/tasks
 app.post('/api/tasks', (req, res) => {
@@ -97,7 +206,10 @@ app.post('/api/tasks', (req, res) => {
     after: newTask,
   });
 
-  res.status(201).json(newTask);
+  res.status(201).json({
+    ...newTask,
+    note: '3.31+ 推荐通过 openclaw tasks create 管理主任务；当前记录写入 runtime/tasks.json，作为本地补充任务。',
+  });
 });
 
 // PATCH /api/tasks/:taskId
@@ -545,9 +657,44 @@ function runCronRuns(jobId, limit) {
 
 app.get('/api/action-queue', (req, res) => res.json([]));
 
+// ── Live Sessions ─────────────────────────────────────────────
+
+// GET /api/sessions/list — active session metadata from last snapshot
+app.get('/api/sessions/list', (req, res) => {
+  const snap = poll.getSnapshot();
+  res.json(snap?.sessions?._raw || []);
+});
+
+// GET /api/sessions/stream — SSE stream of session events
+const _sseClients = new Set();
+
+app.get('/api/sessions/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  // Replay recent events on connect
+  const recent = sessionWatcher.getRecentEvents(200);
+  for (const ev of recent) {
+    res.write(`data: ${JSON.stringify(ev)}\n\n`);
+  }
+
+  _sseClients.add(res);
+  req.on('close', () => _sseClients.delete(res));
+});
+
+sessionWatcher.on('event', (ev) => {
+  const payload = `data: ${JSON.stringify(ev)}\n\n`;
+  for (const client of _sseClients) {
+    client.write(payload);
+  }
+});
+
 // ── Start ─────────────────────────────────────────────────────
 
 poll.start();
+sessionWatcher.start();
 
 app.listen(PORT, () => {
   console.log(`OpenClaw Control Center listening on http://localhost:${PORT}`);

@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const SNAPSHOT_FILE = path.join(__dirname, 'runtime', 'last-snapshot.json');
+const TASKS_SNAPSHOT_FILE = path.join(__dirname, 'runtime', 'tasks-snapshot.json');
 const POLL_INTERVAL_MS = 30_000;
 
 let lastSnapshot = null;
@@ -22,7 +23,8 @@ function runCli(args) {
       if (code !== 0 && stderr) {
         resolve({ ok: false, error: stderr.trim() });
       } else {
-        resolve({ ok: true, data: stdout });
+        // Some openclaw commands emit JSON on stderr (e.g. tasks list --json)
+        resolve({ ok: true, data: stdout.trim() || stderr.trim() });
       }
     });
     proc.on('error', (err) => resolve({ ok: false, error: err.message }));
@@ -80,9 +82,20 @@ function parseSessionsJson(text) {
   }
 }
 
+function parseTasksJson(text) {
+  const firstBrace = text.indexOf('{');
+  if (firstBrace === -1) return null;
+  try {
+    const obj = JSON.parse(text.slice(firstBrace));
+    return Array.isArray(obj?.tasks) ? obj.tasks : [];
+  } catch {
+    return null;
+  }
+}
+
 // ── Snapshot Builder ────────────────────────────────────────────
 
-function buildSnapshot(statusData, agentsData, cronJobs, sessionsData) {
+function buildSnapshot(statusData, agentsData, cronJobs, sessionsData, tasksData) {
   // Gateway
   const gateway = {
     status: 'healthy',
@@ -140,6 +153,7 @@ function buildSnapshot(statusData, agentsData, cronJobs, sessionsData) {
     totalActive: allSessions.length,
     errorCount: allSessions.filter((s) => s.flags?.includes('error')).length,
     blockedCount: 0,
+    _raw: allSessions,
   };
 
   // System
@@ -158,6 +172,7 @@ function buildSnapshot(statusData, agentsData, cronJobs, sessionsData) {
     exceptions: { critical: 0, high: 0, medium: 0, low: 0, pendingAction: 0 },
     memory: { mainMemoryStatus: 'ok', lastUpdated: null },
     system,
+    tasks: tasksData || [],
   };
 }
 
@@ -166,32 +181,41 @@ function buildSnapshot(statusData, agentsData, cronJobs, sessionsData) {
 let pollTimer = null;
 
 async function pollOnce() {
-  const [statusResult, agentsResult, cronResult, sessionsResult] = await Promise.all([
+  const [statusResult, agentsResult, cronResult, sessionsResult, tasksResult] = await Promise.all([
     runCli(['status', '--json']),
     runCli(['agents', 'list', '--json']),
     runCli(['cron', 'list', '--json']),
     runCli(['sessions', '--all-agents', '--active', '60', '--json']),
+    runCli(['tasks', 'list', '--json']),
   ]);
 
   const statusData = statusResult.ok ? parseStatusJson(statusResult.data)?.ok !== false ? parseStatusJson(statusResult.data) : null : null;
   const agentsData = agentsResult.ok ? parseAgentsList(agentsResult.data) : null;
   const cronJobs = cronResult.ok ? parseCronList(cronResult.data) : null;
   const sessionsData = sessionsResult.ok ? parseSessionsJson(sessionsResult.data) : null;
+  const tasksData = tasksResult.ok ? parseTasksJson(tasksResult.data) : [];
 
   const snapshot = buildSnapshot(
     statusData,
     agentsData,
     cronJobs,
-    sessionsData
+    sessionsData,
+    tasksData
   );
 
   // Write to file, but don't crash if it fails
   try {
     const dir = path.dirname(SNAPSHOT_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const tasksSnapshot = {
+      generatedAt: snapshot.generatedAt,
+      tasks: Array.isArray(tasksData) ? tasksData : [],
+      count: Array.isArray(tasksData) ? tasksData.length : 0,
+    };
+    fs.writeFileSync(TASKS_SNAPSHOT_FILE, JSON.stringify(tasksSnapshot, null, 2), 'utf8');
     fs.writeFileSync(SNAPSHOT_FILE, JSON.stringify(snapshot, null, 2), 'utf8');
     lastSnapshot = snapshot;
-    console.log(`[poll] snapshot updated at ${snapshot.generatedAt}, agents=${snapshot.agents.length}, jobs=${snapshot.cron.jobs.length}`);
+    console.log(`[poll] snapshot updated at ${snapshot.generatedAt}, agents=${snapshot.agents.length}, jobs=${snapshot.cron.jobs.length}, tasks=${tasksSnapshot.count}`);
   } catch (err) {
     console.error('[poll] failed to write snapshot:', err.message);
   }

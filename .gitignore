@@ -1,3 +1,7 @@
 node_modules/
 .DS_Store
 *.log
+.gstack/
+runtime/tasks-snapshot.json
+runtime/last-snapshot.json
+runtime/approval-actions.log
