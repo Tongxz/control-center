@@ -621,6 +621,152 @@
       padding: 32px 0;
       text-align: center;
     }
+    /* ── Approvals ── */
+    .approval-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .approval-tab-btn {
+      padding: 6px 16px;
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      color: #888;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .approval-tab-btn:hover { color: #e0e0e0; border-color: #4da6ff; }
+    .approval-tab-btn.active {
+      background: #1a3a6e;
+      border-color: #4da6ff;
+      color: #4da6ff;
+    }
+    .approval-tab-btn .count {
+      display: inline-block;
+      background: #f04040;
+      color: #fff;
+      border-radius: 10px;
+      padding: 0 6px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .approval-tab-btn.active .count { background: #fff; color: #1a3a6e; }
+
+    .approval-item {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .approval-item:hover { border-color: #4da6ff; }
+    .approval-item.expanded { border-color: #4da6ff; background: #1a1a2e; }
+
+    .approval-item-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .approval-item-title {
+      font-size: 13px;
+      color: #e0e0e0;
+      font-weight: 600;
+      flex: 1;
+    }
+    .approval-item-meta {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .approval-detail {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #252525;
+    }
+    .approval-detail-field {
+      margin-bottom: 10px;
+    }
+    .approval-detail-label {
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+    .approval-detail-value {
+      font-size: 13px;
+      color: #e0e0e0;
+    }
+    .approval-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .approval-comment-field {
+      margin-top: 12px;
+    }
+    .approval-comment-input {
+      width: 100%;
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 13px;
+      padding: 8px 12px;
+      resize: vertical;
+      min-height: 60px;
+    }
+    .approval-comment-input:focus { outline: none; border-color: #4da6ff; }
+    .btn-approve {
+      background: #0d3a1e;
+      color: #3ddc84;
+      border-color: #3ddc84;
+    }
+    .btn-approve:hover { background: #145a2e; }
+    .btn-reject {
+      background: #3a0d0d;
+      color: #f04040;
+      border-color: #f04040;
+    }
+    .btn-reject:hover { background: #4a1515; }
+
+    .history-item {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+    }
+    .history-item-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .history-item-title {
+      font-size: 13px;
+      color: #e0e0e0;
+      font-weight: 600;
+      flex: 1;
+    }
+    .history-item-meta {
+      font-size: 11px;
+      color: #666;
+    }
+
+    /* riskLevel badge colors */
+    .badge-critical { background: #3a0d0d; color: #f04040; }
+    .badge-high { background: #3a2a0d; color: #f08040; }
+    .badge-medium { background: #3a2e0d; color: #f0c040; }
+    .badge-low { background: #0d3a1e; color: #3ddc84; }
+
     .health-ok {
       display: flex;
       align-items: center;
@@ -650,6 +796,7 @@
   <button class="tab-btn" data-tab="documents">文档</button>
   <button class="tab-btn" data-tab="memory">记忆</button>
   <button class="tab-btn" data-tab="settings">设置</button>
+  <button class="tab-btn" data-tab="approvals">审批</button>
 </div>
 
 <!-- Content -->
@@ -700,6 +847,18 @@
       <h1>记忆</h1>
       <div id="memory-container">
         <div class="loading">Loading memory...</div>
+      </div>
+    `,
+    approvals: `
+      <h1>审批</h1>
+      <div id="approvals-tabs" class="approval-tabs">
+        <button class="approval-tab-btn active" id="tab-pending">
+          待审批<span class="count" id="pending-count">0</span>
+        </button>
+        <button class="approval-tab-btn" id="tab-history">历史记录</button>
+      </div>
+      <div id="approvals-body">
+        <div class="loading">Loading approvals...</div>
       </div>
     `
   };
@@ -1411,6 +1570,285 @@
     });
   }
 
+  // ── Approvals Panel ─────────────────────────────────────────
+  let currentApprovalView = 'pending'; // 'pending' or 'history'
+  let expandedApprovalId = null;
+  let pendingAction = null; // { approvalId, action: 'approve'|'reject' }
+
+  async function loadApprovals() {
+    const body = document.getElementById('approvals-body');
+    if (!body) return;
+
+    // Bind tab switching
+    document.getElementById('tab-pending')?.addEventListener('click', () => {
+      currentApprovalView = 'pending';
+      document.getElementById('tab-pending')?.classList.add('active');
+      document.getElementById('tab-history')?.classList.remove('active');
+      loadApprovalsPending();
+    });
+    document.getElementById('tab-history')?.addEventListener('click', () => {
+      currentApprovalView = 'history';
+      document.getElementById('tab-pending')?.classList.remove('active');
+      document.getElementById('tab-history')?.classList.add('active');
+      loadApprovalsHistory();
+    });
+
+    if (currentApprovalView === 'history') {
+      document.getElementById('tab-pending')?.classList.remove('active');
+      document.getElementById('tab-history')?.classList.add('active');
+      loadApprovalsHistory();
+    } else {
+      loadApprovalsPending();
+    }
+  }
+
+  async function loadApprovalsPending() {
+    const body = document.getElementById('approvals-body');
+    if (!body) return;
+    body.innerHTML = '<div class="loading">Loading approvals...</div>';
+
+    try {
+      const approvals = await fetchJSON('/api/approvals');
+      const pending = approvals.filter(a => a.status === 'pending');
+
+      // Update badge count
+      const countEl = document.getElementById('pending-count');
+      if (countEl) countEl.textContent = pending.length;
+
+      if (!pending.length) {
+        body.innerHTML = '<div class="empty">暂无待审批项</div>';
+        return;
+      }
+
+      const items = pending.map(a => renderApprovalItem(a, false)).join('');
+      body.innerHTML = items;
+
+      // Bind expand
+      body.querySelectorAll('.approval-item').forEach(el => {
+        el.addEventListener('click', () => toggleApprovalExpand(el.dataset.id));
+      });
+    } catch (err) {
+      body.innerHTML = `<div class="error-msg">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  function renderApprovalItem(a, expanded) {
+    const badgeClass = getRiskBadgeClass(a.riskLevel);
+    const badgeText = a.riskLevel || 'unknown';
+    const requestedAt = a.requestedAt ? new Date(a.requestedAt).toLocaleString() : '—';
+    const expandedClass = expanded ? 'expanded' : '';
+    const detailHTML = expanded ? renderApprovalDetail(a) : '';
+
+    return `
+      <div class="approval-item ${expandedClass}" data-id="${escHtml(a.approvalId)}">
+        <div class="approval-item-header">
+          <div class="approval-item-title">${escHtml(a.title || 'Untitled')}</div>
+          <span class="badge ${badgeClass}">${escHtml(badgeText)}</span>
+        </div>
+        <div class="approval-item-meta">
+          ${escHtml(a.sourceAgent || a.source || '—')} &nbsp;·&nbsp; ${requestedAt}
+        </div>
+        ${detailHTML}
+      </div>
+    `;
+  }
+
+  function renderApprovalDetail(a) {
+    return `
+      <div class="approval-detail">
+        <div class="approval-detail-field">
+          <div class="approval-detail-label">Reason</div>
+          <div class="approval-detail-value">${escHtml(a.reason || '—')}</div>
+        </div>
+        <div class="approval-detail-field">
+          <div class="approval-detail-label">Impact</div>
+          <div class="approval-detail-value">${escHtml(a.impact || '—')}</div>
+        </div>
+        <div class="approval-detail-field">
+          <div class="approval-detail-label">Rollback Plan</div>
+          <div class="approval-detail-value">${escHtml(a.rollbackPlan || '—')}</div>
+        </div>
+        <div class="approval-actions">
+          <button class="btn btn-approve" data-action="approve" data-id="${escHtml(a.approvalId)}">✓ Approve</button>
+          <button class="btn btn-reject" data-action="reject" data-id="${escHtml(a.approvalId)}">✗ Reject</button>
+        </div>
+        <div class="approval-comment-field" id="comment-field-${escHtml(a.approvalId)}" style="display:none;">
+          <textarea class="approval-comment-input" id="comment-input-${escHtml(a.approvalId)}" placeholder="输入备注（可选）"></textarea>
+        </div>
+      </div>
+    `;
+  }
+
+  async function toggleApprovalExpand(approvalId) {
+    const body = document.getElementById('approvals-body');
+    if (!body) return;
+
+    if (expandedApprovalId === approvalId) {
+      // Collapse
+      expandedApprovalId = null;
+      loadApprovalsPending();
+      return;
+    }
+
+    expandedApprovalId = approvalId;
+
+    // Fetch full detail
+    try {
+      const a = await fetchJSON('/api/approvals/' + encodeURIComponent(approvalId));
+      const badgeClass = getRiskBadgeClass(a.riskLevel);
+      const badgeText = a.riskLevel || 'unknown';
+      const requestedAt = a.requestedAt ? new Date(a.requestedAt).toLocaleString() : '—';
+
+      // Replace the item in DOM
+      const existingItem = body.querySelector(`.approval-item[data-id="${CSS.escape(approvalId)}"]`);
+      if (existingItem) {
+        existingItem.classList.add('expanded');
+        existingItem.innerHTML = `
+          <div class="approval-item-header">
+            <div class="approval-item-title">${escHtml(a.title || 'Untitled')}</div>
+            <span class="badge ${badgeClass}">${escHtml(badgeText)}</span>
+          </div>
+          <div class="approval-item-meta">
+            ${escHtml(a.sourceAgent || a.source || '—')} &nbsp;·&nbsp; ${requestedAt}
+          </div>
+          ${renderApprovalDetail(a)}
+        `;
+        bindApprovalActions(a.approvalId);
+      }
+    } catch (err) {
+      console.error('Failed to load approval detail:', err);
+    }
+  }
+
+  function bindApprovalActions(approvalId) {
+    const body = document.getElementById('approvals-body');
+    if (!body) return;
+
+    body.querySelector(`.btn-approve[data-id="${CSS.escape(approvalId)}"]`)?.addEventListener('click', e => {
+      e.stopPropagation();
+      showCommentField(approvalId, 'approve');
+    });
+
+    body.querySelector(`.btn-reject[data-id="${CSS.escape(approvalId)}"]`)?.addEventListener('click', e => {
+      e.stopPropagation();
+      showCommentField(approvalId, 'reject');
+    });
+  }
+
+  function showCommentField(approvalId, action) {
+    const body = document.getElementById('approvals-body');
+    if (!body) return;
+    const field = document.getElementById('comment-field-' + approvalId);
+    if (!field) return;
+
+    field.style.display = 'block';
+    pendingAction = { approvalId, action };
+
+    // Change buttons to confirm
+    const approveBtn = body.querySelector(`.btn-approve[data-id="${CSS.escape(approvalId)}"]`);
+    const rejectBtn = body.querySelector(`.btn-reject[data-id="${CSS.escape(approvalId)}"]`);
+    if (approveBtn) {
+      approveBtn.textContent = '✓ Confirm Approve';
+      approveBtn.onclick = e => {
+        e.stopPropagation();
+        submitApproval(approvalId, 'approve');
+      };
+    }
+    if (rejectBtn) {
+      rejectBtn.textContent = '✗ Confirm Reject';
+      rejectBtn.onclick = e => {
+        e.stopPropagation();
+        submitApproval(approvalId, 'reject');
+      };
+    }
+  }
+
+  async function submitApproval(approvalId, action) {
+    const body = document.getElementById('approvals-body');
+    if (!body) return;
+    const commentInput = document.getElementById('comment-input-' + approvalId);
+    const comment = commentInput?.value || '';
+
+    try {
+      if (action === 'approve') {
+        await fetch('/api/approvals/' + encodeURIComponent(approvalId) + '/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ comment }),
+        });
+      } else {
+        await fetch('/api/approvals/' + encodeURIComponent(approvalId) + '/reject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ comment }),
+        });
+      }
+
+      expandedApprovalId = null;
+      pendingAction = null;
+      // Switch to history view after action
+      currentApprovalView = 'history';
+      document.getElementById('tab-pending')?.classList.remove('active');
+      document.getElementById('tab-history')?.classList.add('active');
+      loadApprovalsHistory();
+    } catch (err) {
+      alert('操作失败: ' + err.message);
+    }
+  }
+
+  async function loadApprovalsHistory() {
+    const body = document.getElementById('approvals-body');
+    if (!body) return;
+    body.innerHTML = '<div class="loading">Loading history...</div>';
+
+    try {
+      const entries = await fetchJSON('/api/approval-actions');
+
+      if (!entries.length) {
+        body.innerHTML = '<div class="empty">暂无审批历史</div>';
+        return;
+      }
+
+      // Sort by actedAt descending
+      const sorted = [...entries].sort((a, b) => {
+        const ta = a.actedAt ? new Date(a.actedAt).getTime() : 0;
+        const tb = b.actedAt ? new Date(b.actedAt).getTime() : 0;
+        return tb - ta;
+      });
+
+      const items = sorted.map(e => {
+        const actionClass = e.action === 'approve' ? 'badge-green' : 'badge-red';
+        const actionText = e.action === 'approve' ? 'Approved' : 'Rejected';
+        const actedAt = e.actedAt ? new Date(e.actedAt).toLocaleString() : '—';
+        return `
+          <div class="history-item">
+            <div class="history-item-header">
+              <div class="history-item-title">${escHtml(e.approvalId || '—')}</div>
+              <span class="badge ${actionClass}">${actionText}</span>
+            </div>
+            <div class="history-item-meta">
+              ${actedAt}${e.comment ? ' · ' + escHtml(e.comment) : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      body.innerHTML = items;
+    } catch (err) {
+      body.innerHTML = `<div class="error-msg">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  function getRiskBadgeClass(riskLevel) {
+    switch (riskLevel) {
+      case 'critical': return 'badge-critical';
+      case 'high': return 'badge-high';
+      case 'medium': return 'badge-medium';
+      case 'low': return 'badge-low';
+      default: return 'badge-gray';
+    }
+  }
+
   // ── Utility ──────────────────────────────────────────────────
   function escHtml(str) {
     if (str == null) return '';
@@ -1464,6 +1902,7 @@
     else if (tab === 'documents') loadDocs();
     else if (tab === 'memory') load记忆();
     else if (tab === 'projects') loadProjects();
+    else if (tab === 'approvals') loadApprovals();
   }
 
   // Patch button clicks to use new injection
