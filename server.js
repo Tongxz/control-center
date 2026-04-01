@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { spawn, execSync } = require('child_process');
+const crypto = require('crypto');
 const { nanoid } = require('nanoid');
 const indexer = require('./indexer');
 const poll = require('./poll');
@@ -10,6 +11,8 @@ const sessionWatcher = require('./session-watcher');
 
 const RUNTIME_DIR = path.join(__dirname, 'runtime');
 const TASKS_SNAPSHOT_MAX_AGE_MS = 2 * 60 * 1000;
+const NOTIFY_CONFIG_FILE = path.join(RUNTIME_DIR, 'notify-config.json');
+const ACCESS_CONFIG_FILE = path.join(RUNTIME_DIR, 'access-config.json');
 
 // ── JSON file helpers ─────────────────────────────────────────
 
@@ -134,6 +137,21 @@ const PORT = 18799;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ── T18: Auth middleware (remote access) ──────────────────────
+app.use('/api', (req, res, next) => {
+  const cfg = loadAccessConfig();
+  if (!cfg.enabled || !cfg.tokenHash) return next();
+  const ip = req.ip || req.socket?.remoteAddress || '';
+  if (['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip)) return next();
+  const auth = req.headers['authorization'] || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!token) return res.status(401).json({ error: 'Authorization required' });
+  if (crypto.createHash('sha256').update(token).digest('hex') !== cfg.tokenHash) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+  next();
+});
 
 // ── Routes ────────────────────────────────────────────────────
 
@@ -405,6 +423,9 @@ app.post('/api/approvals/:approvalId/approve', (req, res) => {
     after: { status: 'approved', comment },
   });
 
+  const _nc1 = loadNotifyConfig();
+  sendFeishuMessage(_nc1, `审批通过: ${approvals[idx].title || approvals[idx].approvalId}`, `备注: ${comment || '无'}`).catch(() => {});
+
   res.json(approvals[idx]);
 });
 
@@ -438,6 +459,9 @@ app.post('/api/approvals/:approvalId/reject', (req, res) => {
     before: { status: 'pending' },
     after: { status: 'rejected', comment },
   });
+
+  const _nc2 = loadNotifyConfig();
+  sendFeishuMessage(_nc2, `审批拒绝: ${approvals[idx].title || approvals[idx].approvalId}`, `备注: ${comment || '无'}`).catch(() => {});
 
   res.json(approvals[idx]);
 });
@@ -655,6 +679,46 @@ app.patch('/api/settings/budget', (req, res) => {
   res.json({ updated: true, config });
 });
 
+// ── T16: Feishu notify helpers ────────────────────────────────
+function loadNotifyConfig() {
+  try { return JSON.parse(fs.readFileSync(NOTIFY_CONFIG_FILE, 'utf8')); }
+  catch { return { webhookUrl: '', level: 'critical', enabled: false }; }
+}
+
+function saveNotifyConfig(cfg) {
+  fs.writeFileSync(NOTIFY_CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf8');
+}
+
+function sendFeishuMessage(cfg, title, body) {
+  if (!cfg.enabled || !cfg.webhookUrl) return Promise.resolve({ skipped: true });
+  return new Promise((resolve) => {
+    let urlObj;
+    try { urlObj = new URL(cfg.webhookUrl); } catch { return resolve({ ok: false, error: 'invalid URL' }); }
+    const mod = urlObj.protocol === 'https:' ? require('https') : require('http');
+    const payload = JSON.stringify({ msg_type: 'text', content: { text: `[OpenClaw Control Center]\n${title}\n${body}` } });
+    const req = mod.request({
+      hostname: urlObj.hostname,
+      port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+      path: urlObj.pathname + urlObj.search,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+    }, (r) => {
+      let data = '';
+      r.on('data', d => { data += d; });
+      r.on('end', () => resolve({ ok: r.statusCode < 300, status: r.statusCode }));
+    });
+    req.on('error', e => resolve({ ok: false, error: e.message }));
+    req.write(payload);
+    req.end();
+  });
+}
+
+// ── T18: Access config helper ─────────────────────────────────
+function loadAccessConfig() {
+  try { return JSON.parse(fs.readFileSync(ACCESS_CONFIG_FILE, 'utf8')); }
+  catch { return { tokenHash: null, enabled: false }; }
+}
+
 function parseChannelProbe(text) {
   const result = [];
   const lines = text.split('\n');
@@ -769,6 +833,159 @@ sessionWatcher.on('event', (ev) => {
   for (const client of _sseClients) {
     client.write(payload);
   }
+});
+
+// ── T14: Usage Summary & CSV Export ──────────────────────────
+
+function computeUsageSummary() {
+  const snap = poll.getSnapshot();
+  const sessions = snap?.sessions?._raw || [];
+  const agentMap = {};
+  for (const s of sessions) {
+    const a = s.agentId || 'unknown';
+    if (!agentMap[a]) agentMap[a] = { agentId: a, sessionCount: 0, inputTokens: 0, outputTokens: 0, totalTokens: 0, cost: 0 };
+    agentMap[a].sessionCount++;
+    agentMap[a].inputTokens += s.inputTokens || 0;
+    agentMap[a].outputTokens += s.outputTokens || 0;
+    agentMap[a].totalTokens += (s.inputTokens || 0) + (s.outputTokens || 0);
+    agentMap[a].cost += s.cost || 0;
+  }
+  return Object.values(agentMap);
+}
+
+app.get('/api/usage/summary', (req, res) => {
+  const agents = computeUsageSummary();
+  const total = agents.reduce((acc, a) => ({
+    sessionCount: acc.sessionCount + a.sessionCount,
+    totalTokens: acc.totalTokens + a.totalTokens,
+    cost: acc.cost + a.cost,
+  }), { sessionCount: 0, totalTokens: 0, cost: 0 });
+  res.json({ agents, total, generatedAt: new Date().toISOString() });
+});
+
+app.get('/api/usage/export.csv', (req, res) => {
+  const agents = computeUsageSummary();
+  const rows = [
+    ['agentId', 'sessionCount', 'inputTokens', 'outputTokens', 'totalTokens', 'estimatedCost'],
+    ...agents.map(a => [a.agentId, a.sessionCount, a.inputTokens, a.outputTokens, a.totalTokens, a.cost.toFixed(6)]),
+  ];
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="usage-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send(rows.map(r => r.join(',')).join('\n'));
+});
+
+// ── T15: Collaboration Hall ───────────────────────────────────
+
+const HALL_AGENTS = new Set(['main', 'forge', 'reviewer', 'sentinel']);
+
+app.get('/api/hall', (req, res) => {
+  const recent = sessionWatcher.getRecentEvents(500);
+  const agentMap = {};
+  for (const ev of recent) {
+    const a = ev.agentId;
+    if (!agentMap[a]) agentMap[a] = { agentId: a, eventCount: 0, sessionIds: new Set(), lastActivity: null };
+    agentMap[a].eventCount++;
+    agentMap[a].sessionIds.add(ev.sessionId);
+    agentMap[a].lastActivity = ev.ts;
+  }
+  const agents = Object.values(agentMap).map(a => ({
+    agentId: a.agentId,
+    eventCount: a.eventCount,
+    sessionCount: a.sessionIds.size,
+    lastActivity: a.lastActivity,
+  }));
+
+  const spawnLinks = [];
+  const seen = new Set();
+  for (const ev of recent) {
+    if (ev.type === 'message' && ev.text) {
+      const m = ev.text.match(/\b(spawned?|invoke[sd]?|启动|called)\s+(\w+)/i);
+      if (m && HALL_AGENTS.has(m[2]) && m[2] !== ev.agentId) {
+        const key = `${ev.agentId}->${m[2]}-${ev.sessionId}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          spawnLinks.push({ from: ev.agentId, to: m[2], ts: ev.ts, sessionId: ev.sessionId });
+        }
+      }
+    }
+  }
+
+  res.json({ agents, spawnLinks, eventTotal: recent.length });
+});
+
+// ── T16: Feishu 推送 routes ───────────────────────────────────
+
+app.get('/api/settings/notify', (req, res) => {
+  const cfg = loadNotifyConfig();
+  res.json({ enabled: cfg.enabled, level: cfg.level, webhookSet: !!cfg.webhookUrl });
+});
+
+app.patch('/api/settings/notify', (req, res) => {
+  const cfg = loadNotifyConfig();
+  const { webhookUrl, level, enabled } = req.body;
+  if (webhookUrl !== undefined) cfg.webhookUrl = webhookUrl;
+  if (level !== undefined) cfg.level = level;
+  if (enabled !== undefined) cfg.enabled = !!enabled;
+  saveNotifyConfig(cfg);
+  res.json({ ok: true, enabled: cfg.enabled, level: cfg.level, webhookSet: !!cfg.webhookUrl });
+});
+
+app.post('/api/settings/notify/test', async (req, res) => {
+  const cfg = loadNotifyConfig();
+  if (!cfg.webhookUrl) return res.status(400).json({ error: 'webhook URL not configured' });
+  const result = await sendFeishuMessage({ ...cfg, enabled: true }, '测试通知', 'OpenClaw Control Center 连接正常 ✓');
+  res.json(result);
+});
+
+// ── T17: Audit Export ─────────────────────────────────────────
+
+app.get('/api/export/runtime', (req, res) => {
+  const bundle = { exportedAt: new Date().toISOString(), files: {} };
+  try {
+    fs.readdirSync(RUNTIME_DIR)
+      .filter(f => f.endsWith('.json') || f.endsWith('.log'))
+      .forEach(f => {
+        try { bundle.files[f] = fs.readFileSync(path.join(RUNTIME_DIR, f), 'utf8'); } catch {}
+      });
+  } catch {}
+  const date = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Disposition', `attachment; filename="runtime-export-${date}.json"`);
+  res.json(bundle);
+});
+
+app.get('/api/export/timeline.csv', (req, res) => {
+  let entries = [];
+  try {
+    const raw = fs.readFileSync(path.join(RUNTIME_DIR, 'timeline.log'), 'utf8');
+    entries = raw.trim().split('\n').filter(Boolean)
+      .map(l => { try { return JSON.parse(l); } catch { return null; } })
+      .filter(Boolean);
+  } catch {}
+  const csvEsc = s => `"${String(s || '').replace(/"/g, '""')}"`;
+  const rows = [
+    ['ts', 'agent', 'type', 'targetId', 'summary'],
+    ...entries.map(e => [e.ts, e.agent, e.type, e.targetId, csvEsc(e.summary)]),
+  ];
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="timeline-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send(rows.map(r => r.join(',')).join('\n'));
+});
+
+// ── T18: 远程访问 routes ──────────────────────────────────────
+
+app.get('/api/settings/access', (req, res) => {
+  const cfg = loadAccessConfig();
+  res.json({ enabled: cfg.enabled, hasToken: !!cfg.tokenHash });
+});
+
+app.patch('/api/settings/access', (req, res) => {
+  const cfg = loadAccessConfig();
+  const { token, enabled } = req.body;
+  if (token !== undefined) cfg.tokenHash = token ? crypto.createHash('sha256').update(token).digest('hex') : null;
+  if (enabled !== undefined) cfg.enabled = !!enabled;
+  fs.writeFileSync(ACCESS_CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf8');
+  res.json({ ok: true, enabled: cfg.enabled, hasToken: !!cfg.tokenHash });
 });
 
 // ── Start ─────────────────────────────────────────────────────

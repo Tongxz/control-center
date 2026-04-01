@@ -936,6 +936,8 @@
   <button class="tab-btn" data-tab="approvals">审批</button>
   <button class="tab-btn" data-tab="timeline">Timeline</button>
   <button class="tab-btn" data-tab="sessions">实时会话</button>
+  <button class="tab-btn" data-tab="usage">账单</button>
+  <button class="tab-btn" data-tab="hall">协作图</button>
 </div>
 
 <!-- Content -->
@@ -1035,13 +1037,31 @@
           <option value="task_create">task_create</option>
           <option value="task_update">task_update</option>
           <option value="project_create">project_create</option>
+          <option value="project_archive">project_archive</option>
           <option value="doc_write">doc_write</option>
+          <option value="memory_write">memory_write</option>
           <option value="approval_action">approval_action</option>
+          <option value="exception_ack">exception_ack</option>
         </select>
         <button class="btn btn-ghost" id="tl-refresh" style="padding:6px 12px;">刷新</button>
+        <a href="/api/export/timeline.csv" download style="margin-left:auto;padding:6px 12px;background:#1e1e1e;border:1px solid #2a2a2a;border-radius:6px;color:#888;font-size:13px;text-decoration:none;cursor:pointer;">导出 CSV</a>
       </div>
       <div id="timeline-body">
         <div class="loading">Loading timeline...</div>
+      </div>
+    `,
+
+    usage: `
+      <h1>账单</h1>
+      <div id="usage-container">
+        <div class="loading">Loading usage...</div>
+      </div>
+    `,
+
+    hall: `
+      <h1>协作图</h1>
+      <div id="hall-container">
+        <div class="loading">Loading hall...</div>
       </div>
     `
   };
@@ -1345,6 +1365,103 @@
           <div style="text-align:right;">${securityItems}</div>
         </div>
       `;
+
+      // ── Feishu 推送配置 ──────────────────────────────────────
+      const notify = await fetchJSON('/api/settings/notify').catch(() => null);
+      panel.innerHTML += `
+        <h2>Feishu 推送</h2>
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="label">Webhook 推送</div>
+              <div class="desc">审批操作自动推送至飞书群</div>
+            </div>
+            <span class="badge ${notify?.enabled ? 'badge-green' : 'badge-gray'}">${notify?.enabled ? 'ON' : 'OFF'}</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input id="notify-webhook" type="text" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..."
+              style="flex:1;min-width:0;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;font-size:12px;padding:6px 10px;font-family:monospace;"
+              value="${notify?.webhookSet ? '(已配置)' : ''}" />
+            <select id="notify-level" style="background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;font-size:12px;padding:6px 8px;">
+              <option value="critical" ${notify?.level === 'critical' ? 'selected' : ''}>仅 critical</option>
+              <option value="all" ${notify?.level === 'all' ? 'selected' : ''}>全部</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" id="btn-notify-save" style="font-size:12px;padding:5px 14px;">保存</button>
+            <button class="btn btn-ghost" id="btn-notify-test" style="font-size:12px;padding:5px 14px;">测试发送</button>
+            <button class="btn btn-ghost" id="btn-notify-toggle" style="font-size:12px;padding:5px 14px;">${notify?.enabled ? '禁用' : '启用'}</button>
+            <span id="notify-msg" style="font-size:12px;color:#555;align-self:center;"></span>
+          </div>
+        </div>
+
+        <h2>远程访问</h2>
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="label">Bearer Token 鉴权</div>
+              <div class="desc">非 localhost 请求需携带 Authorization 头</div>
+            </div>
+            <span class="badge ${(await fetchJSON('/api/settings/access').catch(() => ({ enabled: false }))).enabled ? 'badge-green' : 'badge-gray'}" id="access-badge">-</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input id="access-token" type="password" placeholder="输入新 token（留空则清除）"
+              style="flex:1;min-width:0;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;font-size:12px;padding:6px 10px;" />
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" id="btn-access-save" style="font-size:12px;padding:5px 14px;">设置 Token</button>
+            <button class="btn btn-ghost" id="btn-access-toggle" style="font-size:12px;padding:5px 14px;">切换鉴权</button>
+            <button class="btn btn-ghost" id="btn-export-runtime" style="font-size:12px;padding:5px 14px;" onclick="window.location='/api/export/runtime'">导出 Runtime</button>
+            <span id="access-msg" style="font-size:12px;color:#555;align-self:center;"></span>
+          </div>
+        </div>
+      `;
+
+      // Wire Feishu buttons
+      document.getElementById('btn-notify-save')?.addEventListener('click', async () => {
+        const webhookUrl = document.getElementById('notify-webhook').value.trim();
+        const level = document.getElementById('notify-level').value;
+        const msg = document.getElementById('notify-msg');
+        if (webhookUrl && !webhookUrl.startsWith('(')) {
+          await fetch('/api/settings/notify', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ webhookUrl, level }) });
+          msg.textContent = '已保存'; setTimeout(() => msg.textContent = '', 2000);
+        } else {
+          await fetch('/api/settings/notify', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level }) });
+          msg.textContent = '级别已保存'; setTimeout(() => msg.textContent = '', 2000);
+        }
+      });
+      document.getElementById('btn-notify-test')?.addEventListener('click', async () => {
+        const msg = document.getElementById('notify-msg');
+        const r = await fetch('/api/settings/notify/test', { method: 'POST' });
+        const d = await r.json();
+        msg.style.color = d.ok ? '#4caf50' : '#ef5350';
+        msg.textContent = d.ok ? '发送成功' : (d.error || '发送失败');
+        setTimeout(() => { msg.textContent = ''; msg.style.color = '#555'; }, 3000);
+      });
+      document.getElementById('btn-notify-toggle')?.addEventListener('click', async () => {
+        const cur = notify?.enabled;
+        await fetch('/api/settings/notify', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: !cur }) });
+        loadSettings();
+      });
+
+      // Wire Access buttons
+      const accessData = await fetchJSON('/api/settings/access').catch(() => ({ enabled: false, hasToken: false }));
+      const badge = document.getElementById('access-badge');
+      if (badge) { badge.textContent = accessData.enabled ? 'ON' : 'OFF'; badge.className = `badge ${accessData.enabled ? 'badge-green' : 'badge-gray'}`; }
+      document.getElementById('btn-access-save')?.addEventListener('click', async () => {
+        const token = document.getElementById('access-token').value;
+        const msg = document.getElementById('access-msg');
+        await fetch('/api/settings/access', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: token || null }) });
+        msg.textContent = token ? 'Token 已设置' : 'Token 已清除';
+        document.getElementById('access-token').value = '';
+        setTimeout(() => msg.textContent = '', 2000);
+      });
+      document.getElementById('btn-access-toggle')?.addEventListener('click', async () => {
+        const d = await fetchJSON('/api/settings/access').catch(() => ({ enabled: false }));
+        await fetch('/api/settings/access', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: !d.enabled }) });
+        loadSettings();
+      });
+
     } catch (err) {
       panel.innerHTML = `
         <h1>设置</h1>
@@ -2178,6 +2295,144 @@
     return `${seconds}s`;
   }
 
+  // ── T14: 账单 Panel ──────────────────────────────────────────
+  async function loadUsage() {
+    const panel = document.getElementById('usage-container');
+    if (!panel) return;
+    panel.innerHTML = '<div class="loading">Loading usage...</div>';
+    try {
+      const data = await fetchJSON('/api/usage/summary');
+      const agents = data.agents || [];
+      const total = data.total || {};
+
+      const agentRows = agents.length ? agents.map(a => `
+        <tr>
+          <td style="padding:8px 12px;color:#e0e0e0;">${escHtml(a.agentId)}</td>
+          <td style="padding:8px 12px;text-align:right;color:#888;">${a.sessionCount}</td>
+          <td style="padding:8px 12px;text-align:right;color:#888;">${formatTokens(a.inputTokens)}</td>
+          <td style="padding:8px 12px;text-align:right;color:#888;">${formatTokens(a.outputTokens)}</td>
+          <td style="padding:8px 12px;text-align:right;color:#4da6ff;font-weight:600;">${formatTokens(a.totalTokens)}</td>
+          <td style="padding:8px 12px;text-align:right;color:#4caf50;">$${a.cost.toFixed(4)}</td>
+        </tr>
+      `).join('') : `<tr><td colspan="6" style="padding:20px;text-align:center;color:#555;">暂无 session 用量数据</td></tr>`;
+
+      panel.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div style="display:flex;gap:16px;">
+            <div class="metric" style="min-width:0;">
+              <div class="value">${formatTokens(total.totalTokens || 0)}</div>
+              <div class="label">总 Token 用量</div>
+            </div>
+            <div class="metric" style="min-width:0;">
+              <div class="value">${total.sessionCount || 0}</div>
+              <div class="label">Session 数</div>
+            </div>
+            <div class="metric" style="min-width:0;">
+              <div class="value" style="color:#4caf50;">$${(total.cost || 0).toFixed(4)}</div>
+              <div class="label">预估费用</div>
+            </div>
+          </div>
+          <a href="/api/usage/export.csv" download class="btn btn-ghost" style="font-size:12px;padding:6px 14px;text-decoration:none;">导出 CSV</a>
+        </div>
+        <table style="width:100%;border-collapse:collapse;background:#111;border-radius:8px;overflow:hidden;">
+          <thead>
+            <tr style="background:#1a1a1a;border-bottom:1px solid #2a2a2a;">
+              <th style="padding:10px 12px;text-align:left;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Agent</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Sessions</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Input</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Output</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Total</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Cost</th>
+            </tr>
+          </thead>
+          <tbody>${agentRows}</tbody>
+        </table>
+        <div style="margin-top:24px;">
+          <div style="font-size:11px;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Token 分布（本次 snapshot）</div>
+          <canvas id="usage-chart" width="600" height="120" style="width:100%;max-width:600px;background:#111;border-radius:6px;display:block;"></canvas>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#3a3a3a;">生成时间: ${data.generatedAt || '—'}</div>
+      `;
+
+      // Draw canvas bar chart
+      const canvas = document.getElementById('usage-chart');
+      if (canvas && agents.length) {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width, h = canvas.height;
+        const pad = 12;
+        const maxVal = Math.max(...agents.map(a => a.totalTokens), 1);
+        const barW = Math.floor((w - pad * 2) / agents.length) - 6;
+        ctx.clearRect(0, 0, w, h);
+        agents.forEach((a, i) => {
+          const barH = Math.floor(((a.totalTokens / maxVal) * (h - pad * 3)));
+          const x = pad + i * (barW + 6);
+          const y = h - pad - barH;
+          ctx.fillStyle = '#4da6ff33';
+          ctx.fillRect(x, pad, barW, h - pad * 2);
+          ctx.fillStyle = '#4da6ff';
+          ctx.fillRect(x, y, barW, barH);
+          ctx.fillStyle = '#888';
+          ctx.font = '10px system-ui';
+          ctx.textAlign = 'center';
+          ctx.fillText(a.agentId, x + barW / 2, h - 2);
+        });
+      }
+    } catch (err) {
+      panel.innerHTML = `<div class="error-msg">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  // ── T15: 协作图 Panel ─────────────────────────────────────────
+  async function loadHall() {
+    const panel = document.getElementById('hall-container');
+    if (!panel) return;
+    panel.innerHTML = '<div class="loading">Loading hall...</div>';
+    try {
+      const data = await fetchJSON('/api/hall');
+      const agents = data.agents || [];
+      const spawnLinks = data.spawnLinks || [];
+
+      const agentOrder = ['main', 'forge', 'reviewer', 'sentinel'];
+      const sortedAgents = [
+        ...agentOrder.filter(a => agents.find(x => x.agentId === a)).map(a => agents.find(x => x.agentId === a)),
+        ...agents.filter(a => !agentOrder.includes(a.agentId)),
+      ];
+
+      const agentCards = sortedAgents.map(a => {
+        const lastTs = a.lastActivity ? new Date(a.lastActivity).toLocaleTimeString('zh', { hour12: false }) : '—';
+        return `
+          <div style="background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:14px 16px;min-width:150px;">
+            <div style="font-weight:600;color:#e0e0e0;margin-bottom:6px;">${escHtml(a.agentId)}</div>
+            <div style="font-size:11px;color:#555;margin-bottom:4px;">${a.eventCount} 事件 · ${a.sessionCount} session</div>
+            <div style="font-size:11px;color:#444;">最后活跃: ${lastTs}</div>
+          </div>
+        `;
+      }).join('');
+
+      const spawnRows = spawnLinks.slice(-20).reverse().map(l => {
+        const ts = new Date(l.ts).toLocaleTimeString('zh', { hour12: false });
+        return `
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#111;border-radius:4px;font-size:12px;">
+            <span style="color:#4da6ff;font-weight:600;">${escHtml(l.from)}</span>
+            <span style="color:#444;">→</span>
+            <span style="color:#9b8fe8;font-weight:600;">${escHtml(l.to)}</span>
+            <span style="color:#333;margin-left:auto;font-size:11px;">${ts}</span>
+          </div>
+        `;
+      }).join('') || '<div style="color:#555;font-size:12px;padding:8px;">暂无 spawn 链路记录</div>';
+
+      panel.innerHTML = `
+        <h2>Agent 活跃状态</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px;">${agentCards || '<div style="color:#555;font-size:13px;">暂无实时事件</div>'}</div>
+        <h2>Spawn 链路</h2>
+        <div style="display:flex;flex-direction:column;gap:4px;">${spawnRows}</div>
+        <div style="margin-top:12px;font-size:11px;color:#3a3a3a;">共 ${data.eventTotal || 0} 个 session 事件 · 最近 500 条分析</div>
+      `;
+    } catch (err) {
+      panel.innerHTML = `<div class="error-msg">加载失败: ${err.message}</div>`;
+    }
+  }
+
   // ── Panel Injection Helpers ────────────────────────────────────
   // Replace static panel HTML with dynamic-loading container
   function injectPanelHTML(tab) {
@@ -2193,6 +2448,8 @@
       approvals: panels.approvals,
       timeline: panels.timeline,
       sessions: panels.sessions,
+      usage: panels.usage,
+      hall: panels.hall,
     };
     content.innerHTML = staticPanels[tab] || '<div class="empty">Panel content goes here</div>';
     buttons.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -2209,6 +2466,8 @@
     else if (tab === 'approvals') loadApprovals();
     else if (tab === 'timeline') loadTimeline();
     else if (tab === 'sessions') loadSessions();
+    else if (tab === 'usage') loadUsage();
+    else if (tab === 'hall') loadHall();
   }
 
   // Patch button clicks to use new injection
