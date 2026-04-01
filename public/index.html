@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenClaw Control Center</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f0f0f;
+      color: #e0e0e0;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 200px;
+      min-width: 200px;
+      background: #161616;
+      border-right: 1px solid #2a2a2a;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 0;
+    }
+
+    #sidebar .logo {
+      font-size: 14px;
+      font-weight: 700;
+      color: #4da6ff;
+      padding: 0 16px 20px;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #2a2a2a;
+      margin-bottom: 12px;
+    }
+
+    #sidebar .logo span {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .tab-btn {
+      display: block;
+      width: 100%;
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 13px;
+      font-family: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+      border-left: 3px solid transparent;
+    }
+
+    .tab-btn:hover {
+      color: #e0e0e0;
+      background: #1e1e1e;
+    }
+
+    .tab-btn.active {
+      color: #4da6ff;
+      background: #1a1a2e;
+      border-left-color: #4da6ff;
+    }
+
+    /* ── Content ── */
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+    }
+
+    #content h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 24px;
+    }
+
+    #content h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 24px 0 12px;
+    }
+
+    #content h2:first-child { margin-top: 0; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d3a1e; color: #3ddc84; }
+    .badge-yellow { background: #3a2e0d; color: #f0c040; }
+    .badge-red { background: #3a0d0d; color: #f04040; }
+    .badge-blue { background: #0d1e3a; color: #4da6ff; }
+
+    /* ── Cards ── */
+    .card {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .card-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .metric {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .metric .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .metric .label {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    /* ── List items ── */
+    .list-item {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .list-item .name {
+      font-size: 13px;
+      color: #e0e0e0;
+    }
+
+    .list-item .sub {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .agent-card {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .agent-card .name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e0e0e0;
+      flex: 1;
+    }
+
+    .agent-card .model {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .agent-card .sessions {
+      font-size: 11px;
+      color: #555;
+    }
+
+    .doc-item {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 10px 16px;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #e0e0e0;
+    }
+
+    .empty {
+      color: #555;
+      font-size: 13px;
+      padding: 16px 0;
+    }
+
+    .loading {
+      color: #555;
+      font-size: 13px;
+      padding: 16px 0;
+    }
+
+    .error-msg {
+      color: #f04040;
+      font-size: 13px;
+      padding: 16px 0;
+    }
+
+    .last-updated {
+      font-size: 11px;
+      color: #444;
+      margin-top: 20px;
+    }
+
+    /* ── Divider ── */
+    hr {
+      border: none;
+      border-top: 1px solid #252525;
+      margin: 20px 0;
+    }
+
+    /* 设置 specific */
+    .settings-row {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .settings-row .label {
+      font-size: 13px;
+      color: #e0e0e0;
+    }
+
+    .settings-row .desc {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .exception-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .exception-pill {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 8px;
+      padding: 12px 16px;
+      text-align: center;
+    }
+
+    .exception-pill .count {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .exception-pill .label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+    }
+
+    .exception-pill.critical .count { color: #f04040; }
+    .exception-pill.high .count { color: #f08040; }
+    .exception-pill.medium .count { color: #f0c040; }
+    .exception-pill.low .count { color: #4da6ff; }
+
+    /* ── 任务 ── */
+    .task-item {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+    }
+    .task-item .task-title {
+      font-size: 13px;
+      color: #e0e0e0;
+      font-weight: 600;
+    }
+    .task-item .task-meta {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* ── 异常中心 ── */
+    .exc-item {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+    }
+    .exc-item .exc-type {
+      font-size: 13px;
+      color: #e0e0e0;
+      font-weight: 600;
+    }
+    .exc-item .exc-msg {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    /* ── 文档 two-column ── */
+    .docs-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 16px;
+      height: calc(100vh - 120px);
+    }
+    .docs-list {
+      overflow-y: auto;
+    }
+    .doc-entry {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .doc-entry:hover { border-color: #4da6ff; }
+    .doc-entry.active { border-color: #4da6ff; background: #1a1a2e; }
+    .doc-entry .doc-name {
+      font-size: 13px;
+      color: #e0e0e0;
+    }
+    .doc-entry .doc-meta {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+    .docs-preview {
+      display: flex;
+      flex-direction: column;
+    }
+    .docs-preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .docs-preview-title {
+      font-size: 13px;
+      color: #888;
+    }
+    .doc-textarea {
+      flex: 1;
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 14px;
+      resize: none;
+      min-height: 300px;
+    }
+    .docs-api-hint {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #444;
+      font-family: monospace;
+    }
+
+    /* ── 记忆 two-column ── */
+    .memory-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 16px;
+      height: calc(100vh - 120px);
+    }
+    .memory-list {
+      overflow-y: auto;
+    }
+    .mem-entry {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .mem-entry:hover { border-color: #4da6ff; }
+    .mem-entry.active { border-color: #4da6ff; background: #1a1a2e; }
+    .mem-entry .mem-agent {
+      font-size: 13px;
+      color: #e0e0e0;
+    }
+    .mem-entry .mem-status {
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    .memory-preview {
+      display: flex;
+      flex-direction: column;
+    }
+    .memory-preview-label {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    .memory-textarea {
+      flex: 1;
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 14px;
+      resize: none;
+      min-height: 200px;
+    }
+    .memory-empty {
+      color: #555;
+      font-size: 13px;
+      padding: 32px 0;
+      text-align: center;
+    }
+    .health-ok {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #3ddc84;
+      font-size: 13px;
+      padding: 16px 0;
+    }
+    .health-ok .check {
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div id="sidebar">
+  <div class="logo">
+    OpenClaw
+    <span>Control Center</span>
+  </div>
+  <button class="tab-btn active" data-tab="overview">总览</button>
+  <button class="tab-btn" data-tab="agents">智能体</button>
+  <button class="tab-btn" data-tab="tasks">任务</button>
+  <button class="tab-btn" data-tab="exceptions">异常中心</button>
+  <button class="tab-btn" data-tab="documents">文档</button>
+  <button class="tab-btn" data-tab="memory">记忆</button>
+  <button class="tab-btn" data-tab="settings">设置</button>
+</div>
+
+<!-- Content -->
+<div id="content">
+  <!-- Panels injected here -->
+</div>
+
+<script>
+  // ── Helpers ──────────────────────────────────────────────────
+  async function fetchJSON(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  // ── Panel Content Templates ──────────────────────────────────
+
+  const panels = {
+    tasks: `
+      <h1>任务</h1>
+      <div id="tasks-container">
+        <div class="loading">Loading tasks...</div>
+      </div>
+    `,
+    exceptions: `
+      <h1>异常中心</h1>
+      <div id="exceptions-container">
+        <div class="loading">Loading exceptions...</div>
+      </div>
+    `,
+    documents: `
+      <h1>文档</h1>
+      <div id="docs-container">
+        <div class="loading">Loading documents...</div>
+      </div>
+    `,
+    memory: `
+      <h1>记忆</h1>
+      <div id="memory-container">
+        <div class="loading">Loading memory...</div>
+      </div>
+    `
+  };
+
+  // ── Tab Switching ─────────────────────────────────────────────
+  const content = document.getElementById('content');
+  const buttons = document.querySelectorAll('.tab-btn');
+
+  function showPanel(tab) {
+    content.innerHTML = panels[tab] || '<div class="empty">Panel content goes here</div>';
+    buttons.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => showPanel(btn.dataset.tab));
+  });
+
+  // Default: 总览
+  showPanel('overview');
+
+  // ── 总览 Panel ──────────────────────────────────────────
+  async function loadOverview() {
+    const panel = document.getElementById('panel-overview');
+    if (!panel) return;
+    panel.innerHTML = '<div class="loading">Loading overview...</div>';
+
+    try {
+      const snap = await fetchJSON('/api/overview/snapshot');
+
+      const gw = snap.gateway || {};
+      const version = gw.version || 'unknown';
+      const uptime = gw.uptime ? formatUptime(gw.uptime) : null;
+      const gw状态 = gw.status || 'unknown';
+      const gwBadgeClass = gw状态 === 'healthy' ? 'badge-green' : 'badge-yellow';
+      const gwBadgeText = gw状态.charAt(0).toUpperCase() + gw状态.slice(1);
+
+      const agents = snap.agents || [];
+      const busyAgents = agents.filter(a => a.status === 'busy').length;
+      const totalAgents = agents.length;
+
+      const cronJobs = snap.cron?.jobs || [];
+      const cronOk = cronJobs.filter(j => j.status === 'ok').length;
+      const cronError = cronJobs.filter(j => j.status === 'error').length;
+
+      const exc = snap.exceptions || {};
+      const lastUpdated = snap.generatedAt ? new Date(snap.generatedAt).toLocaleString() : '—';
+
+      panel.innerHTML = `
+        <h1>总览</h1>
+
+        <h2>Gateway 状态</h2>
+        <div class="metric-grid">
+          <div class="metric">
+            <div class="value">${version}</div>
+            <div class="label">网关版本</div>
+          </div>
+          <div class="metric">
+            <div class="value" style="font-size:18px;color:#3ddc84;">${uptime ? uptime : '—'}</div>
+            <div class="label">Uptime</div>
+          </div>
+          <div class="metric">
+            <div class="value" style="font-size:14px;"><span class="badge ${gwBadgeClass}">${gwBadgeText}</span></div>
+            <div class="label">Health 状态</div>
+          </div>
+        </div>
+
+        <h2>Active 智能体</h2>
+        <div class="metric-grid">
+          <div class="metric">
+            <div class="value">${busyAgents}/${totalAgents}</div>
+            <div class="label">忙碌 / Total</div>
+          </div>
+          <div class="metric">
+            <div class="value">${totalAgents}</div>
+            <div class="label">Total 智能体</div>
+          </div>
+          <div class="metric">
+            <div class="value">${busyAgents}</div>
+            <div class="label">Active Sessions</div>
+          </div>
+        </div>
+
+        <h2>定时任务</h2>
+        <div class="metric-grid">
+          <div class="metric">
+            <div class="value" style="color:#3ddc84;">${cronOk}</div>
+            <div class="label">OK</div>
+          </div>
+          <div class="metric">
+            <div class="value" style="color:#f04040;">${cronError}</div>
+            <div class="label">Error</div>
+          </div>
+          <div class="metric">
+            <div class="value">${cronJobs.length}</div>
+            <div class="label">Total Jobs</div>
+          </div>
+        </div>
+
+        <h2>异常中心 Summary</h2>
+        <div class="exception-summary">
+          <div class="exception-pill critical">
+            <div class="count">${exc.critical || 0}</div>
+            <div class="label">Critical</div>
+          </div>
+          <div class="exception-pill high">
+            <div class="count">${exc.high || 0}</div>
+            <div class="label">High</div>
+          </div>
+          <div class="exception-pill medium">
+            <div class="count">${exc.medium || 0}</div>
+            <div class="label">Medium</div>
+          </div>
+          <div class="exception-pill low">
+            <div class="count">${exc.low || 0}</div>
+            <div class="label">Low</div>
+          </div>
+        </div>
+
+        <div class="last-updated">Last updated: ${lastUpdated}</div>
+      `;
+    } catch (err) {
+      panel.innerHTML = `
+        <h1>总览</h1>
+        <div class="error-msg">加载失败: ${err.message}</div>
+      `;
+    }
+  }
+
+  // ── 智能体 Panel ──────────────────────────────────────────────
+  async function loadAgents() {
+    const panel = document.getElementById('panel-agents');
+    if (!panel) return;
+    panel.innerHTML = '<div class="loading">Loading agents...</div>';
+
+    try {
+      const agents = await fetchJSON('/api/agents');
+      const total = agents.length;
+
+      if (!agents.length) {
+        panel.innerHTML = `
+          <h1>智能体</h1>
+          <div class="empty">No agents found</div>
+        `;
+        return;
+      }
+
+      const agentCards = agents.map(a => {
+        const statusBadgeClass = a.status === 'busy' ? 'badge-yellow' : 'badge-green';
+        const statusBadgeText = a.status === 'busy' ? 'busy' : 'idle';
+        const model = a.model || '—';
+        const sessions = a.activeSessionCount || 0;
+        const name = a.displayName || a.agentId || 'Unknown';
+
+        return `
+          <div class="agent-card">
+            <span class="name">${name}</span>
+            <span class="sessions">${sessions} session${sessions !== 1 ? 's' : ''}</span>
+            <span class="badge ${statusBadgeClass}">${statusBadgeText}</span>
+            <span class="model">${model}</span>
+          </div>
+        `;
+      }).join('');
+
+      panel.innerHTML = `
+        <h1>智能体 <span style="font-size:14px;color:#666;font-weight:400;">(${total})</span></h1>
+        ${agentCards}
+      `;
+    } catch (err) {
+      panel.innerHTML = `
+        <h1>智能体</h1>
+        <div class="error-msg">加载失败: ${err.message}</div>
+      `;
+    }
+  }
+
+  // ── 设置 Panel ────────────────────────────────────────────
+  async function loadSettings() {
+    const panel = document.getElementById('panel-settings');
+    if (!panel) return;
+    panel.innerHTML = '<div class="loading">Loading settings...</div>';
+
+    try {
+      const health = await fetchJSON('/api/settings/health');
+
+      const gw = health.gateway || {};
+      const version = gw.version || health.openclaw版本 || 'unknown';
+      // Prefer health.channel (detailed probe), fall back to gateway.channel状态
+      const channels = (health.channel && health.channel.length)
+        ? health.channel
+        : (gw.channel状态 || []);
+
+      // Feishu channel
+      const feishu频道 = channels.find(c =>
+        (c.channel || '').toLowerCase().includes('feishu') ||
+        (c.channel || '').toLowerCase().includes('lark')
+      );
+      const feishu状态 = feishu频道
+        ? (feishu频道.status || '').toLowerCase()
+        : 'unknown';
+      const feishuBadgeClass =
+        feishu状态.includes('run') || feishu状态.includes('ok') || feishu状态 === 'connected'
+          ? 'badge-green'
+          : feishu状态.includes('disconnect') || feishu状态.includes('error') || feishu状态 === 'disconnected'
+            ? 'badge-red'
+            : 'badge-yellow';
+      const feishuDisplay = feishu频道 ? feishu频道.status : 'not found';
+
+      // 模式 — from snapshot system object via the overview (snapshot itself is not
+      // directly available here; default to readonly as per system defaults)
+      const mode = (health.system && health.system.mode) || 'readonly';
+      const modeBadgeClass = mode === 'writable' ? 'badge-green' : 'badge-yellow';
+
+      // Security flags — from health.system.securityFlags, fallback to gw-level or empty
+      const securityFlags = (health.system && health.system.securityFlags) || gw.securityFlags || [];
+      const securityItems = securityFlags.length
+        ? securityFlags.map(f => `<span class="badge badge-blue">${f}</span>`).join(' ')
+        : '<span style="color:#555;">None</span>';
+
+      panel.innerHTML = `
+        <h1>设置</h1>
+
+        <h2>Gateway</h2>
+        <div class="settings-row">
+          <div>
+            <div class="label">网关版本</div>
+            <div class="desc">OpenClaw Gateway</div>
+          </div>
+          <span class="badge badge-blue">${version}</span>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="label">Gateway 状态</div>
+            <div class="desc">${gw.status || 'unknown'}</div>
+          </div>
+          <span class="badge ${gw.status === 'healthy' ? 'badge-green' : 'badge-yellow'}">${gw.status || 'unknown'}</span>
+        </div>
+
+        <h2>频道</h2>
+        <div class="settings-row">
+          <div>
+            <div class="label">Feishu</div>
+            <div class="desc">频道 connection status</div>
+          </div>
+          <span class="badge ${feishuBadgeClass}">${feishuDisplay}</span>
+        </div>
+        ${(gw.channel状态 || []).filter(c => !((c.channel || '').toLowerCase().includes('feishu'))).map(c => `
+          <div class="settings-row">
+            <div>
+              <div class="label">${c.channel || 'Unknown'}</div>
+              <div class="desc">频道 connection status</div>
+            </div>
+            <span class="badge badge-blue">${c.status || 'unknown'}</span>
+          </div>
+        `).join('')}
+
+        <h2>模式</h2>
+        <div class="settings-row">
+          <div>
+            <div class="label">Operation 模式</div>
+            <div class="desc">${mode === 'writable' ? 'Read and write enabled' : 'Read-only — no write operations'}</div>
+          </div>
+          <span class="badge ${modeBadgeClass}">${mode}</span>
+        </div>
+
+        <h2>Security</h2>
+        <div class="settings-row">
+          <div>
+            <div class="label">Security Flags</div>
+            <div class="desc">Active security configurations</div>
+          </div>
+          <div style="text-align:right;">${securityItems}</div>
+        </div>
+      `;
+    } catch (err) {
+      panel.innerHTML = `
+        <h1>设置</h1>
+        <div class="error-msg">加载失败: ${err.message}</div>
+      `;
+    }
+  }
+
+  // ── 任务 Panel ──────────────────────────────────────────────
+  async function loadTasks() {
+    const panel = document.getElementById('tasks-container');
+    if (!panel) return;
+    panel.innerHTML = '<div class="loading">Loading tasks...</div>';
+
+    try {
+      const tasks = await fetchJSON('/api/tasks');
+
+      if (!tasks.length) {
+        panel.innerHTML = `
+          <div class="empty" style="padding:8px 0 16px;">暂无任务</div>
+          <button class="tab-btn" disabled style="color:#555;cursor:not-allowed;">创建任务</button>
+        `;
+        return;
+      }
+
+      const rows = tasks.map(t => {
+        const statusClass = t.status === 'done' ? 'badge-green'
+          : t.status === 'doing' ? 'badge-yellow'
+          : 'badge-blue';
+        const owner = t.ownerAgentId || '—';
+        return `
+          <div class="task-item">
+            <div class="task-title">${escHtml(t.title || 'Untitled')}</div>
+            <div class="task-meta">
+              <span class="badge ${statusClass}">${t.status || 'unknown'}</span>
+              &nbsp;·&nbsp;owner: ${escHtml(owner)}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      panel.innerHTML = rows;
+    } catch (err) {
+      panel.innerHTML = `<div class="error-msg">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  // ── 异常中心 Panel ─────────────────────────────────────────
+  async function loadExceptions() {
+    const panel = document.getElementById('exceptions-container');
+    if (!panel) return;
+    panel.innerHTML = '<div class="loading">Loading exceptions...</div>';
+
+    try {
+      const exceptions = await fetchJSON('/api/exceptions');
+
+      if (!exceptions.length) {
+        panel.innerHTML = `
+          <div class="health-ok">
+            <span class="check">✓</span>
+            无异常 — system is healthy
+          </div>
+        `;
+        return;
+      }
+
+      const rows = exceptions.map(e => {
+        const sevClass = e.severity === 'critical' ? 'badge-red'
+          : e.severity === 'high' ? 'badge-yellow'
+          : e.severity === 'medium' ? 'badge-yellow'
+          : 'badge-blue';
+        return `
+          <div class="exc-item">
+            <div class="exc-type">
+              <span class="badge ${sevClass}">${escHtml(e.severity || 'unknown')}</span>
+              &nbsp;${escHtml(e.type || 'Unknown type')}
+            </div>
+            <div class="exc-msg">${escHtml(e.message || '')}</div>
+          </div>
+        `;
+      }).join('');
+
+      panel.innerHTML = rows;
+    } catch (err) {
+      panel.innerHTML = `<div class="error-msg">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  // ── 文档 Panel ──────────────────────────────────────────
+  let docsList = [];
+  let activeDocId = null;
+
+  async function loadDocs() {
+    const panel = document.getElementById('docs-container');
+    if (!panel) return;
+    panel.innerHTML = '<div class="loading">Loading documents...</div>';
+
+    try {
+      docsList = await fetchJSON('/api/docs');
+
+      if (!docsList.length) {
+        panel.innerHTML = '<div class="empty">No documents found</div>';
+        return;
+      }
+
+      renderDocsPanel(panel, null);
+    } catch (err) {
+      panel.innerHTML = `<div class="error-msg">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  function renderDocsPanel(panel, selectedId) {
+    activeDocId = selectedId;
+
+    const docEntries = docsList.map(d => {
+      const active = d.id === selectedId ? 'active' : '';
+      const size = d.size ? formatSize(d.size) : '—';
+      const date = d.updatedAt ? new Date(d.updatedAt).toLocaleDateString() : '—';
+      return `
+        <div class="doc-entry ${active}" data-id="${escHtml(d.id)}">
+          <div class="doc-name">${escHtml(d.id)}</div>
+          <div class="doc-meta">${size} · ${date}</div>
+        </div>
+      `;
+    }).join('');
+
+    let previewHTML = '<div class="docs-preview"><div class="docs-preview-header"><span class="docs-preview-title">Select a document to preview</span></div></div>';
+
+    if (selectedId) {
+      previewHTML = `
+        <div class="docs-preview">
+          <div class="docs-preview-header">
+            <span class="docs-preview-title">${escHtml(selectedId)}</span>
+            <span class="badge badge-blue">PUT /api/docs/:id</span>
+          </div>
+          <textarea class="doc-textarea" id="doc-content" readonly placeholder="Loading..."></textarea>
+          <div class="docs-api-hint">PUT /api/docs/${escHtml(selectedId)} — read-only (save not implemented)</div>
+        </div>
+      `;
+    }
+
+    panel.innerHTML = `
+      <div class="docs-layout">
+        <div class="docs-list">${docEntries}</div>
+        <div class="docs-right">${previewHTML}</div>
+      </div>
+    `;
+
+    // Bind click events
+    panel.querySelectorAll('.doc-entry').forEach(el => {
+      el.addEventListener('click', async () => {
+        const id = el.dataset.id;
+        const right = panel.querySelector('.docs-right');
+        if (!right) return;
+        right.innerHTML = `<div class="loading" style="padding:16px 0;">Loading ${escHtml(id)}...</div>`;
+
+        try {
+          const doc = await fetchJSON('/api/docs/' + encodeURIComponent(id));
+          right.innerHTML = `
+            <div class="docs-preview">
+              <div class="docs-preview-header">
+                <span class="docs-preview-title">${escHtml(id)}</span>
+                <span class="badge badge-blue">PUT /api/docs/:id</span>
+              </div>
+              <textarea class="doc-textarea" readonly>${escHtml(doc.content || '')}</textarea>
+              <div class="docs-api-hint">PUT /api/docs/${escHtml(id)} — read-only (save not implemented)</div>
+            </div>
+          `;
+          // Update active state without full re-render
+          panel.querySelectorAll('.doc-entry').forEach(e => {
+            e.classList.toggle('active', e.dataset.id === id);
+          });
+        } catch (err) {
+          right.innerHTML = `<div class="error-msg">Failed to load: ${err.message}</div>`;
+        }
+      });
+    });
+  }
+
+  // ── 记忆 Panel ──────────────────────────────────────────────
+  let memoryList = [];
+
+  async function load记忆() {
+    const panel = document.getElementById('memory-container');
+    if (!panel) return;
+    panel.innerHTML = '<div class="loading">Loading memory...</div>';
+
+    try {
+      memoryList = await fetchJSON('/api/memory');
+
+      if (!memoryList.length) {
+        panel.innerHTML = '<div class="empty">No memory entries found</div>';
+        return;
+      }
+
+      render记忆Panel(panel, null);
+    } catch (err) {
+      panel.innerHTML = `<div class="error-msg">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  function render记忆Panel(panel, selectedAgentId) {
+    const entries = memoryList.map(m => {
+      const active = m.agentId === selectedAgentId ? 'active' : '';
+      const statusClass = m.status === 'ok' ? 'badge-green' : 'badge-yellow';
+      const date = m.lastUpdated ? new Date(m.lastUpdated).toLocaleDateString() : '—';
+      return `
+        <div class="mem-entry ${active}" data-agent="${escHtml(m.agentId)}">
+          <div class="mem-agent">${escHtml(m.agentId)}</div>
+          <div class="mem-status">
+            <span class="badge ${statusClass}">${m.status}</span>
+            &nbsp;·&nbsp;${date}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    let previewHTML = '<div class="memory-preview"><div class="memory-preview-label">Select an agent to view memory</div></div>';
+
+    if (selectedAgentId) {
+      previewHTML = `
+        <div class="memory-preview">
+          <div class="memory-preview-label">${escHtml(selectedAgentId)} — memory</div>
+          <textarea class="memory-textarea" id="mem-content" readonly placeholder="Loading..."></textarea>
+        </div>
+      `;
+    }
+
+    panel.innerHTML = `
+      <div class="memory-layout">
+        <div class="memory-list">${entries}</div>
+        <div class="memory-right">${previewHTML}</div>
+      </div>
+    `;
+
+    // Bind click events
+    panel.querySelectorAll('.mem-entry').forEach(el => {
+      el.addEventListener('click', async () => {
+        const agentId = el.dataset.agent;
+        const right = panel.querySelector('.memory-right');
+        if (!right) return;
+        right.innerHTML = `
+          <div class="memory-preview">
+            <div class="memory-preview-label">${escHtml(agentId)} — memory</div>
+            <textarea class="memory-textarea" readonly placeholder="Loading..."></textarea>
+          </div>
+        `;
+
+        try {
+          const mem = await fetchJSON('/api/memory/' + encodeURIComponent(agentId));
+          const ta = right.querySelector('.memory-textarea');
+          if (ta) {
+            if (mem.status === 'empty' || !mem.content) {
+              ta.value = '';
+              ta.placeholder = 'No memory content — status: empty';
+            } else {
+              ta.value = mem.content || '';
+            }
+          }
+          // Update active state without full re-render
+          panel.querySelectorAll('.mem-entry').forEach(e => {
+            e.classList.toggle('active', e.dataset.agent === agentId);
+          });
+        } catch (err) {
+          right.innerHTML = `<div class="error-msg">Failed to load: ${err.message}</div>`;
+        }
+      });
+    });
+  }
+
+  // ── Utility ──────────────────────────────────────────────────
+  function escHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function formatUptime(ms) {
+    if (!ms) return null;
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    if (days > 0) return `${days}d ${hours % 24}h`;
+    if (hours > 0) return `${hours}h ${minutes % 60}m`;
+    if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+    return `${seconds}s`;
+  }
+
+  // ── Panel Injection Helpers ────────────────────────────────────
+  // Replace static panel HTML with dynamic-loading container
+  function injectPanelHTML(tab) {
+    const staticPanels = {
+      overview: '<div id="panel-overview"></div>',
+      agents: '<div id="panel-agents"></div>',
+      settings: '<div id="panel-settings"></div>',
+      tasks: panels.tasks,
+      exceptions: panels.exceptions,
+      documents: panels.documents,
+      memory: panels.memory,
+    };
+    content.innerHTML = staticPanels[tab] || '<div class="empty">Panel content goes here</div>';
+    buttons.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+
+    // Trigger data load for dynamic panels
+    if (tab === 'overview') loadOverview();
+    else if (tab === 'agents') loadAgents();
+    else if (tab === 'settings') loadSettings();
+    else if (tab === 'tasks') loadTasks();
+    else if (tab === 'exceptions') loadExceptions();
+    else if (tab === 'documents') loadDocs();
+    else if (tab === 'memory') load记忆();
+  }
+
+  // Patch button clicks to use new injection
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => injectPanelHTML(btn.dataset.tab));
+  });
+
+  // Load all panels in parallel on startup
+  loadOverview();
+  loadAgents();
+  loadSettings();
+
+  // Override showPanel so default tab works with dynamic injection
+  // Patch the default showPanel call
+  content.innerHTML = '<div id="panel-overview"></div>';
+  loadOverview();
+</script>
+
+</body>
+</html>

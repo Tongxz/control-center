@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "snapshot.schema.json",
+  "title": "OverviewSnapshot",
+  "description": "总览页聚合快照",
+  "type": "object",
+  "required": ["generatedAt", "gateway", "agents", "cron", "exceptions", "system"],
+  "properties": {
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "快照生成时间 ISO 8601"
+    },
+    "gateway": {
+      "type": "object",
+      "description": "Gateway 状态",
+      "properties": {
+        "status": { "type": "string", "enum": ["healthy", "degraded", "down"] },
+        "version": { "type": "string" },
+        "uptime": { "type": "integer", "description": "运行秒数" },
+        "os": { "type": "string" },
+        "nodeVersion": { "type": "string" },
+        "address": { "type": "string" },
+        "channelStatus": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "channel": { "type": "string" },
+              "status": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "agents": {
+      "type": "array",
+      "description": "所有 Agent 状态列表",
+      "items": {
+        "type": "object",
+        "properties": {
+          "agentId": { "type": "string" },
+          "displayName": { "type": "string" },
+          "model": { "type": "string" },
+          "status": { "type": "string", "enum": ["idle", "busy", "error", "offline"] },
+          "currentTaskId": { "type": ["string", "null"] },
+          "activeSessionCount": { "type": "integer" },
+          "lastActivity": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "cron": {
+      "type": "object",
+      "description": "Cron Job 状态",
+      "properties": {
+        "jobs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "schedule": { "type": "string" },
+              "nextRun": { "type": "string", "format": "date-time" },
+              "lastRun": { "type": "string", "format": "date-time" },
+              "status": { "type": "string", "enum": ["ok", "error", "disabled", "idle"] },
+              "lastError": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "sessions": {
+      "type": "object",
+      "description": "Session 概览",
+      "properties": {
+        "totalActive": { "type": "integer" },
+        "errorCount": { "type": "integer" },
+        "blockedCount": { "type": "integer" }
+      }
+    },
+    "exceptions": {
+      "type": "object",
+      "description": "异常摘要",
+      "properties": {
+        "critical": { "type": "integer" },
+        "high": { "type": "integer" },
+        "medium": { "type": "integer" },
+        "low": { "type": "integer" },
+        "pendingAction": { "type": "integer", "description": "待处理的异常数" }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "description": "记忆系统健康",
+      "properties": {
+        "mainMemoryStatus": { "type": "string", "enum": ["ok", "stale", "missing"] },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      }
+    },
+    "system": {
+      "type": "object",
+      "description": "系统级信息",
+      "properties": {
+        "mode": { "type": "string", "enum": ["readonly", "writable", "approval-mode"] },
+        "openclawVersion": { "type": "string" },
+        "securityFlags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "需要关注的安全配置项"
+        }
+      }
+    }
+  }
+}

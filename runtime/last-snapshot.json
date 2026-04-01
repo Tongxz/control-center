@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-04-01T06:44:06.359Z",
+  "gateway": {
+    "status": "healthy",
+    "version": "2026.3.28",
+    "uptime": null,
+    "os": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "release": "24.6.0",
+      "label": "macos 15.7.3 (arm64)"
+    },
+    "nodeVersion": null,
+    "address": null,
+    "channelStatus": [
+      {
+        "channel": "Feishu",
+        "status": "configured"
+      },
+      {
+        "channel": "- default",
+        "status": "unknown"
+      }
+    ]
+  },
+  "agents": [
+    {
+      "agentId": "main",
+      "displayName": "🦊 Claw",
+      "model": "minimax-portal/MiniMax-M2.7-highspeed",
+      "status": "busy",
+      "currentTaskId": null,
+      "activeSessionCount": 2,
+      "lastActivity": "2026-04-01T06:43:42.779Z"
+    },
+    {
+      "agentId": "forge",
+      "displayName": ":hammer_and_wrench: Forge",
+      "model": "openai-codex/gpt-5.4",
+      "status": "busy",
+      "currentTaskId": null,
+      "activeSessionCount": 4,
+      "lastActivity": "2026-04-01T06:08:27.032Z"
+    },
+    {
+      "agentId": "reviewer",
+      "displayName": ":mag: Reviewer",
+      "model": "minimax-portal/MiniMax-M2.7",
+      "status": "idle",
+      "currentTaskId": null,
+      "activeSessionCount": 0,
+      "lastActivity": null
+    },
+    {
+      "agentId": "sentinel",
+      "displayName": ":shield: Sentinel",
+      "model": "minimax-portal/MiniMax-M2.7-highspeed",
+      "status": "busy",
+      "currentTaskId": null,
+      "activeSessionCount": 2,
+      "lastActivity": "2026-04-01T06:35:44.168Z"
+    }
+  ],
+  "cron": {
+    "jobs": [
+      {
+        "id": "dd845072-79de-4b70-9248-4417efbf49b4",
+        "name": "sentinel-health",
+        "schedule": "every 3600000ms",
+        "nextRun": "2026-04-01T07:35:44.163Z",
+        "lastRun": "2026-04-01T06:35:44.163Z",
+        "status": "ok",
+        "lastError": null
+      },
+      {
+        "id": "34e52ac4-c165-46fb-bc92-4928190a798f",
+        "name": "daily-briefing",
+        "schedule": "0 7 * * *",
+        "nextRun": "2026-04-01T23:00:00.000Z",
+        "lastRun": "2026-03-31T23:00:00.009Z",
+        "status": "ok",
+        "lastError": null
+      },
+      {
+        "id": "a74d6518-ed0c-4607-bc18-0ee1e399deb5",
+        "name": "sentinel-daily-scan",
+        "schedule": "0 9 * * *",
+        "nextRun": "2026-04-02T01:00:00.000Z",
+        "lastRun": "2026-04-01T01:28:55.495Z",
+        "status": "ok",
+        "lastError": null
+      },
+      {
+        "id": "553c80e7-ed72-46ba-a560-029fa6944d73",
+        "name": "monthly-summary",
+        "schedule": "0 20 28-31 * *",
+        "nextRun": "2026-04-28T12:00:00.000Z",
+        "lastRun": null,
+        "status": "ok",
+        "lastError": null
+      }
+    ]
+  },
+  "sessions": {
+    "totalActive": 8,
+    "errorCount": 0,
+    "blockedCount": 0
+  },
+  "exceptions": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "pendingAction": 0
+  },
+  "memory": {
+    "mainMemoryStatus": "ok",
+    "lastUpdated": null
+  },
+  "system": {
+    "mode": "readonly",
+    "openclawVersion": "2026.3.28",
+    "securityFlags": []
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "project.schema.json",
+  "title": "Project",
+  "description": "控制中心项目实体",
+  "type": "object",
+  "required": ["projectId", "name", "status", "createdAt"],
+  "properties": {
+    "projectId": {
+      "type": "string",
+      "description": "项目唯一标识符",
+      "pattern": "^proj-[a-z0-9]+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "项目名称",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "summary": {
+      "type": "string",
+      "description": "项目描述"
+    },
+    "status": {
+      "type": "string",
+      "description": "项目状态",
+      "enum": ["planning", "active", "paused", "done", "cancelled"]
+    },
+    "owner": {
+      "type": "string",
+      "description": "项目负责人 agent ID",
+      "enum": ["main", "forge", "reviewer", "sentinel"]
+    },
+    "budgetScope": {
+      "type": "object",
+      "description": "预算范围",
+      "properties": {
+        "tokenBudget": { "type": "integer", "description": "月度 token 上限" },
+        "costBudget": { "type": "number", "description": "月度费用上限（美元）" }
+      }
+    },
+    "taskIds": {
+      "type": "array",
+      "description": "属于本项目的任务 ID 列表",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "progress": {
+      "type": "object",
+      "description": "进度聚合",
+      "properties": {
+        "total": { "type": "integer" },
+        "done": { "type": "integer" },
+        "inProgress": { "type": "integer" },
+        "blocked": { "type": "integer" }
+      }
+    },
+    "riskSummary": {
+      "type": "string",
+      "description": "风险摘要"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

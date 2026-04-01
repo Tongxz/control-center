@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "task.schema.json",
+  "title": "Task",
+  "description": "控制中心任务实体",
+  "type": "object",
+  "required": ["taskId", "title", "ownerAgentId", "status", "createdAt"],
+  "properties": {
+    "taskId": {
+      "type": "string",
+      "description": "任务唯一标识符",
+      "pattern": "^task-[a-z0-9]+$"
+    },
+    "title": {
+      "type": "string",
+      "description": "任务标题",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "description": "任务详细描述"
+    },
+    "ownerAgentId": {
+      "type": "string",
+      "description": "负责执行的 agent ID",
+      "enum": ["main", "forge", "reviewer", "sentinel"]
+    },
+    "projectId": {
+      "type": ["string", "null"],
+      "description": "所属项目 ID"
+    },
+    "status": {
+      "type": "string",
+      "description": "任务状态",
+      "enum": ["todo", "in_progress", "blocked", "review_required", "approval_required", "done", "cancelled"]
+    },
+    "priority": {
+      "type": "string",
+      "description": "优先级",
+      "enum": ["low", "medium", "high", "critical"],
+      "default": "medium"
+    },
+    "riskLevel": {
+      "type": "string",
+      "description": "风险等级",
+      "enum": ["none", "low", "medium", "high"],
+      "default": "none"
+    },
+    "dod": {
+      "type": "string",
+      "description": "完成定义（Definition of Done）"
+    },
+    "artifacts": {
+      "type": "array",
+      "description": "产出物列表",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "type": { "type": "string" }
+        }
+      },
+      "default": []
+    },
+    "rollbackPlan": {
+      "type": "string",
+      "description": "回滚方案"
+    },
+    "linkedSessions": {
+      "type": "array",
+      "description": "关联的 session ID 列表",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "linkedApprovals": {
+      "type": "array",
+      "description": "关联的审批 ID 列表",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "创建时间 ISO 8601"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "最后更新时间 ISO 8601"
+    },
+    "dueAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "截止时间 ISO 8601"
+    }
+  }
+}

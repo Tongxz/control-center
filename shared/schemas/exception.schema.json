@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "exception.schema.json",
+  "title": "Exception",
+  "description": "控制中心异常实体",
+  "type": "object",
+  "required": ["exceptionId", "type", "severity", "source", "message", "createdAt"],
+  "properties": {
+    "exceptionId": {
+      "type": "string",
+      "description": "异常唯一标识符",
+      "pattern": "^exc-[a-z0-9]+$"
+    },
+    "type": {
+      "type": "string",
+      "description": "异常类型",
+      "enum": [
+        "session_error",
+        "session_blocked",
+        "cron_error",
+        "approval_pending",
+        "task_overdue",
+        "budget_overrun",
+        "heartbeat_stale",
+        "missing_doc",
+        "missing_memory",
+        "delivery_failed",
+        "security_warning"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "description": "严重级别",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "source": {
+      "type": "string",
+      "description": "异常来源",
+      "enum": ["session", "cron", "approval", "task", "budget", "memory", "gateway", "security"]
+    },
+    "message": {
+      "type": "string",
+      "description": "异常信息描述"
+    },
+    "relatedTaskId": {
+      "type": ["string", "null"],
+      "description": "关联任务 ID"
+    },
+    "relatedSessionId": {
+      "type": ["string", "null"],
+      "description": "关联 session ID"
+    },
+    "relatedProjectId": {
+      "type": ["string", "null"],
+      "description": "关联项目 ID"
+    },
+    "actionRequired": {
+      "type": "string",
+      "description": "需要采取的行动描述"
+    },
+    "actionStatus": {
+      "type": "string",
+      "description": "行动状态",
+      "enum": ["pending", "acknowledged", "snoozed", "resolved"],
+      "default": "pending"
+    },
+    "snoozedUntil": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "延后至"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolvedAt": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  }
+}
