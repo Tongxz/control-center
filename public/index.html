@@ -107,6 +107,8 @@
     .badge-yellow { background: #3a2e0d; color: #f0c040; }
     .badge-red { background: #3a0d0d; color: #f04040; }
     .badge-blue { background: #0d1e3a; color: #4da6ff; }
+    .badge-gray { background: #1e1e1e; color: #888; }
+    .badge-done { background: #1e1e1e; color: #888; }
 
     /* ── Cards ── */
     .card {
@@ -313,6 +315,155 @@
     .exception-pill.medium .count { color: #f0c040; }
     .exception-pill.low .count { color: #4da6ff; }
 
+    /* ── 项目 ── */
+    .projects-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .project-card {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .project-card:hover { border-color: #4da6ff; }
+    .project-card.expanded { border-color: #4da6ff; background: #1a1a2e; }
+    .project-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .project-card-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e0e0e0;
+      flex: 1;
+    }
+    .project-card-meta {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .project-summary {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #252525;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .project-summary-metric {
+      text-align: center;
+      background: #111;
+      border-radius: 6px;
+      padding: 8px;
+    }
+    .project-summary-metric .value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .project-summary-metric .label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.15s;
+    }
+    .btn-primary {
+      background: #1a3a6e;
+      color: #4da6ff;
+      border-color: #4da6ff;
+    }
+    .btn-primary:hover { background: #1a4a8a; }
+    .btn-ghost {
+      background: transparent;
+      color: #888;
+      border-color: #2a2a2a;
+    }
+    .btn-ghost:hover { background: #1e1e1e; color: #e0e0e0; }
+    .btn-danger {
+      background: #3a0d0d;
+      color: #f04040;
+      border-color: #f04040;
+    }
+    .btn-danger:hover { background: #4a1515; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 24px;
+      width: 420px;
+      max-width: 90vw;
+    }
+    .modal h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 20px;
+    }
+    .modal-field {
+      margin-bottom: 14px;
+    }
+    .modal-field label {
+      display: block;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .modal-field input,
+    .modal-field textarea {
+      width: 100%;
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 13px;
+      padding: 8px 12px;
+      resize: vertical;
+    }
+    .modal-field input:focus,
+    .modal-field textarea:focus {
+      outline: none;
+      border-color: #4da6ff;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
     /* ── 任务 ── */
     .task-item {
       background: #181818;
@@ -494,6 +645,7 @@
   <button class="tab-btn active" data-tab="overview">总览</button>
   <button class="tab-btn" data-tab="agents">智能体</button>
   <button class="tab-btn" data-tab="tasks">任务</button>
+  <button class="tab-btn" data-tab="projects">项目</button>
   <button class="tab-btn" data-tab="exceptions">异常中心</button>
   <button class="tab-btn" data-tab="documents">文档</button>
   <button class="tab-btn" data-tab="memory">记忆</button>
@@ -520,6 +672,16 @@
       <h1>任务</h1>
       <div id="tasks-container">
         <div class="loading">Loading tasks...</div>
+      </div>
+    `,
+    projects: `
+      <h1>项目</h1>
+      <div id="projects-toolbar" class="projects-toolbar">
+        <span style="font-size:13px;color:#555;">点击项目查看 summary</span>
+        <button class="btn btn-primary" id="btn-new-project">+ 新建项目</button>
+      </div>
+      <div id="projects-list">
+        <div class="loading">Loading projects...</div>
       </div>
     `,
     exceptions: `
@@ -990,6 +1152,174 @@
     });
   }
 
+  // ── 项目 Panel ──────────────────────────────────────────────
+  async function loadProjects() {
+    const panel = document.getElementById('projects-list');
+    if (!panel) return;
+    panel.innerHTML = '<div class="loading">Loading projects...</div>';
+
+    // Bind new project button
+    const toolbar = document.getElementById('projects-toolbar');
+    if (toolbar) {
+      const btn = document.getElementById('btn-new-project');
+      if (btn) btn.onclick = () => showNewProjectModal();
+    }
+
+    try {
+      const projects = await fetchJSON('/api/projects');
+
+      if (!projects.length) {
+        panel.innerHTML = '<div class="empty">暂无项目，点击右上角「新建项目」创建</div>';
+        return;
+      }
+
+      const cards = projects.map(p => {
+        const statusBadgeClass = getProjectStatusClass(p.status);
+        const statusLabel = p.status || 'planning';
+        const created = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '—';
+        return `
+          <div class="project-card" data-id="${escHtml(p.projectId)}">
+            <div class="project-card-header">
+              <div class="project-card-name">${escHtml(p.name || 'Untitled')}</div>
+              <span class="badge ${statusBadgeClass}">${escHtml(statusLabel)}</span>
+            </div>
+            <div class="project-card-meta">owner: ${escHtml(p.owner || '—')} &nbsp;·&nbsp; ${created}</div>
+          </div>
+        `;
+      }).join('');
+
+      panel.innerHTML = cards;
+
+      // Bind click to expand
+      panel.querySelectorAll('.project-card').forEach(el => {
+        el.addEventListener('click', async () => {
+          const id = el.dataset.id;
+          // Toggle expand
+          if (el.classList.contains('expanded') && el.querySelector('.project-summary')) {
+            el.classList.remove('expanded');
+            el.querySelector('.project-summary').remove();
+            return;
+          }
+          // Remove other expanded
+          panel.querySelectorAll('.project-card.expanded').forEach(other => {
+            other.classList.remove('expanded');
+            const s = other.querySelector('.project-summary');
+            if (s) s.remove();
+          });
+          el.classList.add('expanded');
+
+          // Load summary
+          const summaryDiv = document.createElement('div');
+          summaryDiv.className = 'project-summary';
+          summaryDiv.innerHTML = `
+            <div class="project-summary-metric"><div class="value">—</div><div class="label">Total</div></div>
+            <div class="project-summary-metric"><div class="value">—</div><div class="label">Done</div></div>
+            <div class="project-summary-metric"><div class="value">—</div><div class="label">In Progress</div></div>
+            <div class="project-summary-metric"><div class="value">—</div><div class="label">Blocked</div></div>
+          `;
+          el.appendChild(summaryDiv);
+
+          try {
+            const sum = await fetchJSON('/api/projects/' + encodeURIComponent(id) + '/summary');
+            summaryDiv.innerHTML = `
+              <div class="project-summary-metric">
+                <div class="value">${sum.taskCount ?? 0}</div>
+                <div class="label">Total</div>
+              </div>
+              <div class="project-summary-metric">
+                <div class="value" style="color:#3ddc84;">${sum.doneCount ?? 0}</div>
+                <div class="label">Done</div>
+              </div>
+              <div class="project-summary-metric">
+                <div class="value" style="color:#f0c040;">${sum.inProgressCount ?? 0}</div>
+                <div class="label">In Progress</div>
+              </div>
+              <div class="project-summary-metric">
+                <div class="value" style="color:#f04040;">${sum.blockedCount ?? 0}</div>
+                <div class="label">Blocked</div>
+              </div>
+            `;
+          } catch {
+            summaryDiv.innerHTML = '<div class="empty" style="grid-column:1/-1;">加载 summary 失败</div>';
+          }
+        });
+      });
+    } catch (err) {
+      panel.innerHTML = `<div class="error-msg">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  function getProjectStatusClass(status) {
+    switch (status) {
+      case 'planning': return 'badge-blue';
+      case 'active': return 'badge-green';
+      case 'paused': return 'badge-yellow';
+      case 'done': return 'badge-gray';
+      case 'cancelled': return 'badge-red';
+      default: return 'badge-blue';
+    }
+  }
+
+  // Status label styling for done=gray
+  function getProjectStatusStyle(status) {
+    if (status === 'done') return 'background:#1e1e1e;color:#888;';
+    return '';
+  }
+
+  function showNewProjectModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>新建项目</h2>
+        <div class="modal-field">
+          <label>项目名称 *</label>
+          <input type="text" id="proj-name" placeholder="输入项目名称" autofocus />
+        </div>
+        <div class="modal-field">
+          <label>项目描述</label>
+          <textarea id="proj-summary" rows="3" placeholder="简要描述项目目标"></textarea>
+        </div>
+        <div class="modal-field">
+          <label>负责人</label>
+          <input type="text" id="proj-owner" placeholder="main" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="modal-cancel">取消</button>
+          <button class="btn btn-primary" id="modal-submit">创建</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#modal-cancel').onclick = () => overlay.remove();
+    overlay.querySelector('#modal-submit').onclick = async () => {
+      const name = document.getElementById('proj-name').value.trim();
+      const summary = document.getElementById('proj-summary').value.trim();
+      const owner = document.getElementById('proj-owner').value.trim() || 'main';
+      if (!name) {
+        document.getElementById('proj-name').style.borderColor = '#f04040';
+        return;
+      }
+      try {
+        await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, summary, owner }),
+        });
+        overlay.remove();
+        loadProjects();
+      } catch (err) {
+        alert('创建失败: ' + err.message);
+      }
+    };
+
+    // Close on overlay click
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.remove();
+    });
+  }
+
   // ── 记忆 Panel ──────────────────────────────────────────────
   let memoryList = [];
 
@@ -1117,6 +1447,7 @@
       agents: '<div id="panel-agents"></div>',
       settings: '<div id="panel-settings"></div>',
       tasks: panels.tasks,
+      projects: panels.projects,
       exceptions: panels.exceptions,
       documents: panels.documents,
       memory: panels.memory,
@@ -1132,6 +1463,7 @@
     else if (tab === 'exceptions') loadExceptions();
     else if (tab === 'documents') loadDocs();
     else if (tab === 'memory') load记忆();
+    else if (tab === 'projects') loadProjects();
   }
 
   // Patch button clicks to use new injection
