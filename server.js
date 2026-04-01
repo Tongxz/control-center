@@ -31,6 +31,21 @@ function appendJsonl(relPath, entry) {
   fs.appendFileSync(filePath, JSON.stringify(entry) + '\n', 'utf8');
 }
 
+// ── Timeline helper ──────────────────────────────────────────
+// agent: 'main' | 'forge' | 'reviewer' | 'sentinel' | 'system'
+function recordTimeline({ agent = 'system', type, targetId, summary, before = {}, after = {} }) {
+  const entry = {
+    ts: new Date().toISOString(),
+    agent,
+    type,
+    targetId,
+    summary,
+    before,
+    after,
+  };
+  appendJsonl('timeline.log', entry);
+}
+
 const app = express();
 const PORT = 18799;
 
@@ -53,6 +68,66 @@ app.get('/api/agents', (req, res) => {
 });
 
 app.get('/api/tasks', (req, res) => res.json(readJson('tasks.json') || []));
+
+// POST /api/tasks
+app.post('/api/tasks', (req, res) => {
+  const { title, ownerAgentId, projectId, status, priority, riskLevel } = req.body;
+  if (!title) return res.status(400).json({ error: 'title is required' });
+
+  const tasks = readJson('tasks.json') || [];
+  const newTask = {
+    taskId: `task-${nanoid(10)}`,
+    title,
+    ownerAgentId: ownerAgentId || 'main',
+    projectId: projectId || null,
+    status: status || 'todo',
+    priority: priority || 'medium',
+    riskLevel: riskLevel || 'medium',
+    createdAt: new Date().toISOString(),
+  };
+  tasks.push(newTask);
+  writeJson('tasks.json', tasks);
+
+  recordTimeline({
+    agent: newTask.ownerAgentId,
+    type: 'task_create',
+    targetId: newTask.taskId,
+    summary: `创建任务: ${title}`,
+    before: {},
+    after: newTask,
+  });
+
+  res.status(201).json(newTask);
+});
+
+// PATCH /api/tasks/:taskId
+app.patch('/api/tasks/:taskId', (req, res) => {
+  const tasks = readJson('tasks.json') || [];
+  const idx = tasks.findIndex(t => t.taskId === req.params.taskId);
+  if (idx === -1) return res.status(404).json({ error: 'not found' });
+
+  const before = { ...tasks[idx] };
+  const allowed = ['title', 'ownerAgentId', 'projectId', 'status', 'priority', 'riskLevel', 'dod', 'artifacts', 'rollbackPlan'];
+  const updates = req.body;
+  const updated = { ...before };
+  for (const key of allowed) {
+    if (updates[key] !== undefined) updated[key] = updates[key];
+  }
+  updated.updatedAt = new Date().toISOString();
+  tasks[idx] = updated;
+  writeJson('tasks.json', tasks);
+
+  recordTimeline({
+    agent: updated.ownerAgentId || 'system',
+    type: 'task_update',
+    targetId: updated.taskId,
+    summary: `更新任务: ${updated.title}`,
+    before,
+    after: updated,
+  });
+
+  res.json(updated);
+});
 
 app.get('/api/projects', (req, res) => {
   res.json(readJson('projects.json') || []);
@@ -83,6 +158,16 @@ app.post('/api/projects', (req, res) => {
   };
   projects.push(newProject);
   writeJson('projects.json', projects);
+
+  recordTimeline({
+    agent: newProject.owner,
+    type: 'project_create',
+    targetId: newProject.projectId,
+    summary: `创建项目: ${name}`,
+    before: {},
+    after: newProject,
+  });
+
   res.status(201).json(newProject);
 });
 
@@ -170,6 +255,15 @@ app.post('/api/approvals/:approvalId/approve', (req, res) => {
   };
   appendJsonl('approval-actions.log', logEntry);
 
+  recordTimeline({
+    agent: 'main',
+    type: 'approval_action',
+    targetId: approvals[idx].approvalId,
+    summary: `审批通过: ${approvals[idx].title || approvals[idx].approvalId}`,
+    before: { status: 'pending' },
+    after: { status: 'approved', comment },
+  });
+
   res.json(approvals[idx]);
 });
 
@@ -195,6 +289,15 @@ app.post('/api/approvals/:approvalId/reject', (req, res) => {
   };
   appendJsonl('approval-actions.log', logEntry);
 
+  recordTimeline({
+    agent: 'main',
+    type: 'approval_action',
+    targetId: approvals[idx].approvalId,
+    summary: `审批拒绝: ${approvals[idx].title || approvals[idx].approvalId}`,
+    before: { status: 'pending' },
+    after: { status: 'rejected', comment },
+  });
+
   res.json(approvals[idx]);
 });
 
@@ -218,6 +321,46 @@ app.get('/api/approval-actions', (req, res) => {
   res.json(entries);
 });
 
+// GET /api/timeline
+app.get('/api/timeline', (req, res) => {
+  const filePath = path.join(RUNTIME_DIR, 'timeline.log');
+  let entries = [];
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    entries = content.trim().split('\n').filter(Boolean).map(line => {
+      try { return JSON.parse(line); }
+      catch { return null; }
+    }).filter(Boolean);
+  } catch {
+    entries = [];
+  }
+
+  // Filter by agent
+  if (req.query.agent) {
+    entries = entries.filter(e => e.agent === req.query.agent);
+  }
+
+  // Filter by type
+  if (req.query.type) {
+    entries = entries.filter(e => e.type === req.query.type);
+  }
+
+  // Filter by time range
+  if (req.query.from) {
+    const fromMs = new Date(req.query.from).getTime();
+    entries = entries.filter(e => new Date(e.ts).getTime() >= fromMs);
+  }
+  if (req.query.to) {
+    const toMs = new Date(req.query.to).getTime();
+    entries = entries.filter(e => new Date(e.ts).getTime() <= toMs);
+  }
+
+  // Sort by ts descending (newest first)
+  entries.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+
+  res.json(entries);
+});
+
 // ── Docs (workspace indexer) ─────────────────────────────────
 
 app.get('/api/docs', (req, res) => {
@@ -234,7 +377,18 @@ app.put('/api/docs/:id', (req, res) => {
   const { content } = req.body;
   if (content === undefined) return res.status(400).json({ error: 'content required' });
   try {
-    res.json(indexer.putDoc(req.params.id, content));
+    // Get doc before for timeline
+    const before = indexer.getDoc(req.params.id) || {};
+    const result = indexer.putDoc(req.params.id, content);
+    recordTimeline({
+      agent: 'main',
+      type: 'doc_write',
+      targetId: req.params.id,
+      summary: `更新文档: ${req.params.id}`,
+      before: { content: before.content || '' },
+      after: { content },
+    });
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

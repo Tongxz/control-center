@@ -766,6 +766,52 @@
     .badge-high { background: #3a2a0d; color: #f08040; }
     .badge-medium { background: #3a2e0d; color: #f0c040; }
     .badge-low { background: #0d3a1e; color: #3ddc84; }
+    .badge-purple { background: #2a0d3a; color: #c080f0; }
+
+    /* ── Timeline ── */
+    .timeline-item {
+      background: #181818;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+    }
+    .timeline-item-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .timeline-agent {
+      font-size: 12px;
+      color: #888;
+      font-weight: 600;
+    }
+    .timeline-ts {
+      font-size: 11px;
+      color: #555;
+      margin-left: auto;
+    }
+    .timeline-summary {
+      font-size: 13px;
+      color: #e0e0e0;
+      margin-bottom: 4px;
+    }
+    .timeline-target {
+      font-size: 11px;
+      color: #555;
+    }
+    .timeline-diff {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #555;
+      font-family: monospace;
+      word-break: break-all;
+    }
+    .tl-label {
+      color: #888;
+      margin-right: 4px;
+    }
 
     .health-ok {
       display: flex;
@@ -797,6 +843,7 @@
   <button class="tab-btn" data-tab="memory">记忆</button>
   <button class="tab-btn" data-tab="settings">设置</button>
   <button class="tab-btn" data-tab="approvals">审批</button>
+  <button class="tab-btn" data-tab="timeline">Timeline</button>
 </div>
 
 <!-- Content -->
@@ -859,6 +906,31 @@
       </div>
       <div id="approvals-body">
         <div class="loading">Loading approvals...</div>
+      </div>
+    `,
+    timeline: `
+      <h1>Timeline</h1>
+      <div id="timeline-filters" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <select id="tl-filter-agent" style="background:#181818;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;font-family:inherit;font-size:13px;padding:6px 10px;">
+          <option value="">全部 Agent</option>
+          <option value="main">main</option>
+          <option value="forge">forge</option>
+          <option value="reviewer">reviewer</option>
+          <option value="sentinel">sentinel</option>
+          <option value="system">system</option>
+        </select>
+        <select id="tl-filter-type" style="background:#181818;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;font-family:inherit;font-size:13px;padding:6px 10px;">
+          <option value="">全部类型</option>
+          <option value="task_create">task_create</option>
+          <option value="task_update">task_update</option>
+          <option value="project_create">project_create</option>
+          <option value="doc_write">doc_write</option>
+          <option value="approval_action">approval_action</option>
+        </select>
+        <button class="btn btn-ghost" id="tl-refresh" style="padding:6px 12px;">刷新</button>
+      </div>
+      <div id="timeline-body">
+        <div class="loading">Loading timeline...</div>
       </div>
     `
   };
@@ -1849,6 +1921,87 @@
     }
   }
 
+  // ── Timeline Panel ────────────────────────────────────────────
+  let timelineAbortController = null;
+
+  async function loadTimeline() {
+    const panel = document.getElementById('timeline-body');
+    if (!panel) return;
+    panel.innerHTML = '<div class="loading">Loading timeline...</div>';
+
+    const agent = document.getElementById('tl-filter-agent')?.value || '';
+    const type = document.getElementById('tl-filter-type')?.value || '';
+
+    let url = '/api/timeline';
+    const params = new URLSearchParams();
+    if (agent) params.set('agent', agent);
+    if (type) params.set('type', type);
+    if (params.toString()) url += '?' + params.toString();
+
+    try {
+      const entries = await fetchJSON(url);
+
+      if (!entries.length) {
+        panel.innerHTML = '<div class="empty">暂无操作记录</div>';
+        return;
+      }
+
+      const rows = entries.slice(0, 100).map(e => {
+        const ts = e.ts ? new Date(e.ts).toLocaleString() : '—';
+        const typeClass = getTimelineTypeClass(e.type);
+        const summary = escHtml(e.summary || '—');
+        const agent = escHtml(e.agent || '—');
+        const targetId = escHtml(e.targetId || '—');
+        const typeLabel = escHtml(e.type || '—');
+
+        return `
+          <div class="timeline-item">
+            <div class="timeline-item-header">
+              <span class="badge ${typeClass}">${typeLabel}</span>
+              <span class="timeline-agent">${agent}</span>
+              <span class="timeline-ts">${ts}</span>
+            </div>
+            <div class="timeline-summary">${summary}</div>
+            <div class="timeline-target">target: ${targetId}</div>
+            ${(e.before && Object.keys(e.before).length) || (e.after && Object.keys(e.after).length) ? `
+              <div class="timeline-diff">
+                ${Object.keys(e.before || {}).length ? `<span class="tl-label">before:</span> ${escHtml(JSON.stringify(e.before))}` : ''}
+                ${Object.keys(e.after || {}).length ? `<span class="tl-label">after:</span> ${escHtml(JSON.stringify(e.after))}` : ''}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      panel.innerHTML = rows;
+    } catch (err) {
+      panel.innerHTML = `<div class="error-msg">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  function getTimelineTypeClass(type) {
+    switch (type) {
+      case 'task_create': return 'badge-blue';
+      case 'task_update': return 'badge-yellow';
+      case 'project_create': return 'badge-green';
+      case 'doc_write': return 'badge-gray';
+      case 'approval_action': return 'badge-purple';
+      default: return 'badge-gray';
+    }
+  }
+
+  // Bind timeline filters
+  document.addEventListener('change', e => {
+    if (e.target.id === 'tl-filter-agent' || e.target.id === 'tl-filter-type') {
+      loadTimeline();
+    }
+  });
+  document.addEventListener('click', e => {
+    if (e.target.id === 'tl-refresh') {
+      loadTimeline();
+    }
+  });
+
   // ── Utility ──────────────────────────────────────────────────
   function escHtml(str) {
     if (str == null) return '';
@@ -1889,6 +2042,8 @@
       exceptions: panels.exceptions,
       documents: panels.documents,
       memory: panels.memory,
+      approvals: panels.approvals,
+      timeline: panels.timeline,
     };
     content.innerHTML = staticPanels[tab] || '<div class="empty">Panel content goes here</div>';
     buttons.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -1903,6 +2058,7 @@
     else if (tab === 'memory') load记忆();
     else if (tab === 'projects') loadProjects();
     else if (tab === 'approvals') loadApprovals();
+    else if (tab === 'timeline') loadTimeline();
   }
 
   // Patch button clicks to use new injection
