@@ -149,6 +149,15 @@ app.get('/api/agents', (req, res) => {
   res.json(snap.agents);
 });
 
+// GET /api/agents/:agentId/sessions
+app.get('/api/agents/:agentId/sessions', (req, res) => {
+  const snap = poll.getSnapshot();
+  if (!snap) return res.status(503).json({ error: 'snapshot not ready yet' });
+  const all = snap.sessions?._raw || [];
+  const filtered = all.filter(s => s.agentId === req.params.agentId);
+  res.json(filtered);
+});
+
 app.get('/api/tasks', async (req, res) => {
   try {
     const payload = await getPreferredTasksPayload();
@@ -301,6 +310,28 @@ app.patch('/api/projects/:projectId', (req, res) => {
   res.json(updated);
 });
 
+// DELETE /api/projects/:projectId — archive (soft-delete) a project
+app.delete('/api/projects/:projectId', (req, res) => {
+  const projects = readJson('projects.json') || [];
+  const idx = projects.findIndex(p => p.projectId === req.params.projectId);
+  if (idx === -1) return res.status(404).json({ error: 'not found' });
+
+  const before = { ...projects[idx] };
+  projects[idx] = { ...before, status: 'archived', archivedAt: new Date().toISOString() };
+  writeJson('projects.json', projects);
+
+  recordTimeline({
+    agent: 'system',
+    type: 'project_archive',
+    targetId: req.params.projectId,
+    summary: `归档项目: ${before.name}`,
+    before: { status: before.status },
+    after: { status: 'archived' },
+  });
+
+  res.json(projects[idx]);
+});
+
 // GET /api/projects/:projectId/summary
 app.get('/api/projects/:projectId/summary', (req, res) => {
   const projects = readJson('projects.json') || [];
@@ -322,8 +353,6 @@ app.get('/api/projects/:projectId/summary', (req, res) => {
 });
 
 app.get('/api/exceptions', (req, res) => res.json([]));
-
-app.get('/api/approve', (req, res) => res.json([]));
 
 // ── Approvals ─────────────────────────────────────────────────
 
@@ -516,6 +545,27 @@ app.get('/api/memory/:agentId', (req, res) => {
   res.json(indexer.getMemory(req.params.agentId));
 });
 
+// PUT /api/memory/:agentId
+app.put('/api/memory/:agentId', (req, res) => {
+  const { content } = req.body;
+  if (content === undefined) return res.status(400).json({ error: 'content required' });
+  try {
+    const before = indexer.getMemory(req.params.agentId) || {};
+    const result = indexer.putMemory(req.params.agentId, content);
+    recordTimeline({
+      agent: req.params.agentId,
+      type: 'memory_write',
+      targetId: req.params.agentId,
+      summary: `更新记忆: ${req.params.agentId}`,
+      before: { content: before.content || '' },
+      after: { content },
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Budget helpers ──────────────────────────────────────────────
 
 const BUDGET_CONFIG_FILE = path.join(RUNTIME_DIR, 'budget-config.json');
@@ -655,7 +705,37 @@ function runCronRuns(jobId, limit) {
   });
 }
 
-app.get('/api/action-queue', (req, res) => res.json([]));
+app.get('/api/action-queue', (req, res) => {
+  const acks = readJson('acks.json') || [];
+  res.json(acks);
+});
+
+// POST /api/action-queue/:itemId/ack
+app.post('/api/action-queue/:itemId/ack', (req, res) => {
+  const acks = readJson('acks.json') || [];
+  const { snoozeUntil } = req.body || {};
+  const existing = acks.find(a => a.itemId === req.params.itemId);
+  if (existing) {
+    existing.ackedAt = new Date().toISOString();
+    if (snoozeUntil) existing.snoozeUntil = snoozeUntil;
+  } else {
+    acks.push({
+      itemId: req.params.itemId,
+      ackedAt: new Date().toISOString(),
+      ...(snoozeUntil ? { snoozeUntil } : {}),
+    });
+  }
+  writeJson('acks.json', acks);
+  recordTimeline({
+    agent: 'system',
+    type: 'exception_ack',
+    targetId: req.params.itemId,
+    summary: `确认异常: ${req.params.itemId}`,
+    before: {},
+    after: { ackedAt: new Date().toISOString() },
+  });
+  res.json({ ok: true, itemId: req.params.itemId });
+});
 
 // ── Live Sessions ─────────────────────────────────────────────
 

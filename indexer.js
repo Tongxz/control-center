@@ -166,4 +166,45 @@ function getMemory(agentId) {
   }
 }
 
-module.exports = { listDocs, getDoc, putDoc, listMemory, getMemory };
+/**
+ * Write memory for an agentId.
+ * Writes to the most recently modified file for the agent.
+ * If no file exists, creates YYYY-MM-DD[-agentId].md in MEMORY_DIR.
+ * Returns {ok: true, file} or throws.
+ */
+function putMemory(agentId, content) {
+  let targetFile = null;
+
+  try {
+    const files = fs.readdirSync(MEMORY_DIR);
+    const mdFiles = files.filter(f => f.endsWith('.md'));
+    const matches = [];
+
+    for (const file of mdFiles) {
+      const filePath = path.join(MEMORY_DIR, file);
+      const stat = statOrNull(filePath);
+      if (!stat) continue;
+      const slugMatch = file.match(/^\d{4}-\d{2}-\d{2}(-(.+))\.md$/);
+      const fileAgentId = slugMatch ? (slugMatch[2] || 'main') : 'main';
+      if (fileAgentId === agentId) matches.push({ file, stat });
+    }
+
+    if (matches.length > 0) {
+      matches.sort((a, b) => b.stat.mtime - a.stat.mtime);
+      targetFile = matches[0].file;
+    }
+  } catch {
+    // MEMORY_DIR may not exist yet
+  }
+
+  if (!targetFile) {
+    const today = new Date().toISOString().slice(0, 10);
+    targetFile = agentId === 'main' ? `${today}.md` : `${today}-${agentId}.md`;
+    try { fs.mkdirSync(MEMORY_DIR, { recursive: true }); } catch {}
+  }
+
+  fs.writeFileSync(path.join(MEMORY_DIR, targetFile), content, 'utf8');
+  return { ok: true, file: targetFile };
+}
+
+module.exports = { listDocs, getDoc, putDoc, listMemory, getMemory, putMemory };
