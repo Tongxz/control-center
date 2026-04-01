@@ -44,11 +44,6 @@ class SessionWatcher extends EventEmitter {
       persistent: true,
       ignoreInitial: false,
       followSymlinks: false,
-      ignored: (p) => {
-        const base = path.basename(p);
-        // skip files that aren't plain .jsonl (e.g. .jsonl.deleted.xxx, .jsonl.reset.xxx)
-        return base.includes('.jsonl.') || (base !== path.basename(p, path.extname(p)) + '.jsonl' && base.endsWith('.jsonl') === false);
-      },
       depth: 0,
     });
 
