@@ -1,9 +1,29 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { spawn, execSync } = require('child_process');
+const { nanoid } = require('nanoid');
 const indexer = require('./indexer');
 const poll = require('./poll');
+
+const RUNTIME_DIR = path.join(__dirname, 'runtime');
+
+// ── JSON file helpers ─────────────────────────────────────────
+
+function readJson(relPath) {
+  const filePath = path.join(RUNTIME_DIR, relPath);
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function writeJson(relPath, data) {
+  const filePath = path.join(RUNTIME_DIR, relPath);
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+}
 
 const app = express();
 const PORT = 18799;
@@ -26,9 +46,77 @@ app.get('/api/agents', (req, res) => {
   res.json(snap.agents);
 });
 
-app.get('/api/tasks', (req, res) => res.json([]));
+app.get('/api/tasks', (req, res) => res.json(readJson('tasks.json') || []));
 
-app.get('/api/projects', (req, res) => res.json([]));
+app.get('/api/projects', (req, res) => {
+  res.json(readJson('projects.json') || []);
+});
+
+// GET /api/projects/:projectId
+app.get('/api/projects/:projectId', (req, res) => {
+  const projects = readJson('projects.json') || [];
+  const project = projects.find(p => p.projectId === req.params.projectId);
+  if (!project) return res.status(404).json({ error: 'not found' });
+  res.json(project);
+});
+
+// POST /api/projects
+app.post('/api/projects', (req, res) => {
+  const { name, summary, owner } = req.body;
+  if (!name) return res.status(400).json({ error: 'name is required' });
+
+  const projects = readJson('projects.json') || [];
+  const newProject = {
+    projectId: `proj-${nanoid(10)}`,
+    name,
+    summary: summary || '',
+    status: 'planning',
+    owner: owner || 'main',
+    taskIds: [],
+    createdAt: new Date().toISOString(),
+  };
+  projects.push(newProject);
+  writeJson('projects.json', projects);
+  res.status(201).json(newProject);
+});
+
+// PATCH /api/projects/:projectId
+app.patch('/api/projects/:projectId', (req, res) => {
+  const projects = readJson('projects.json') || [];
+  const idx = projects.findIndex(p => p.projectId === req.params.projectId);
+  if (idx === -1) return res.status(404).json({ error: 'not found' });
+
+  const allowed = ['name', 'summary', 'status', 'owner'];
+  const updates = req.body;
+  const updated = { ...projects[idx] };
+  for (const key of allowed) {
+    if (updates[key] !== undefined) updated[key] = updates[key];
+  }
+  updated.updatedAt = new Date().toISOString();
+  projects[idx] = updated;
+  writeJson('projects.json', projects);
+  res.json(updated);
+});
+
+// GET /api/projects/:projectId/summary
+app.get('/api/projects/:projectId/summary', (req, res) => {
+  const projects = readJson('projects.json') || [];
+  const project = projects.find(p => p.projectId === req.params.projectId);
+  if (!project) return res.status(404).json({ error: 'not found' });
+
+  const tasks = readJson('tasks.json') || [];
+  const projectTasks = tasks.filter(t => t.projectId === req.params.projectId);
+
+  res.json({
+    projectId: project.projectId,
+    name: project.name,
+    status: project.status,
+    taskCount: projectTasks.length,
+    doneCount: projectTasks.filter(t => t.status === 'done').length,
+    inProgressCount: projectTasks.filter(t => t.status === 'in-progress').length,
+    blockedCount: projectTasks.filter(t => t.status === 'blocked').length,
+  });
+});
 
 app.get('/api/exceptions', (req, res) => res.json([]));
 
