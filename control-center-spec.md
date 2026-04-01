@@ -4,10 +4,10 @@
 OpenClaw Control Center（自定义版）
 
 ## 版本
-v0.2
+v0.3 — 适配 OpenClaw 3.31
 
 ## 状态
-设计定稿
+设计中
 
 ---
 
@@ -87,11 +87,24 @@ v0.2
 - 任务列表、状态流转
 - owner 分配
 - linked session / project
-- heartbeat 检查
+- Task Flows 状态（3.31+）
 
-**数据源**: 本地 `runtime/tasks.json`
+**数据源**: `openclaw tasks list --json`（真实源）+ `openclaw flows list`（Flow 状态）；`runtime/tasks-snapshot.json` 为 poll.js 缓存
 
-### 4. Exceptions 异常中心
+**3.31 重大变更**: OpenClaw 3.31 将 tasks 迁移至 SQLite 后端，`openclaw tasks list --json` 为统一真实数据源，不再依赖 `runtime/tasks.json`。控制中心作为观察者接入，支持读操作，不做写操作。
+
+### 3.1 Tasks 详情与 Flow 视图
+- `GET /api/tasks/:taskId`：任务详情（调用 `openclaw tasks show <id> --json`）
+- `GET /api/flows`：Task Flow 列表（调用 `openclaw flows list`，graceful fallback）
+
+**数据源**: `openclaw tasks show <taskId> --json`、`openclaw flows list --json`
+
+### 4. Live Sessions 实时监控
+- 活跃 session 列表（来自 `openclaw sessions --all-agents --active 60 --json`）
+- SSE 流：session 新消息实时推送
+- session-watcher.js：通过 chokidar 监控 `~/.openclaw/agents/{agent}/sessions/*.jsonl`，实时解析 session 事件
+
+**数据源**: `openclaw sessions --all-agents --active 60 --json` + 文件系统监控
 - 异常聚合 + 严重级别
 - action queue
 - ack / snooze
@@ -112,7 +125,7 @@ v0.2
 
 **数据源**: MEMORY.md、memory/ 目录
 
-### 7. Settings / Health
+### 7.1 Exceptions 异常中心
 - Gateway 版本、连接状态
 - channel 状态（Feishu）
 - API key 状态（不显示值）
@@ -120,6 +133,13 @@ v0.2
 - 安全配置（allowInsecureAuth 等）
 
 **数据源**: `openclaw status --json`、`openclaw channels status --probe`
+
+### 7.2 Exec Approvals 监控
+- 审批状态：`runtime/approvals.json`（本地记录）
+- 审批历史：`runtime/approval-actions.log`（追加写入）
+- 支持 approve / reject 操作（前端触发）
+
+**数据源**: `runtime/approvals.json`、`runtime/approval-actions.log`
 
 ---
 
@@ -165,14 +185,19 @@ Backend (Node.js)           ← workspace/control-center/
 ```
 workspace/control-center/
 ├── server.js              # HTTP server + API
-├── poll.js                # 轮询逻辑
+├── poll.js                # 轮询逻辑（3.31 适配版）
+├── indexer.js             # Workspace 文件系统索引
+├── session-watcher.js     # Session JSONL 文件监控 + SSE
 ├── package.json
 ├── runtime/               # 本地状态存储
-│   ├── tasks.json
+│   ├── tasks.json         # 本地补充任务（非 3.31 主任务）
+│   ├── tasks-snapshot.json # poll.js 缓存的 OpenClaw 真实任务
 │   ├── projects.json
 │   ├── acks.json
-│   ├── last-snapshot.json
-│   └── timeline.log
+│   ├── approvals.json     # 审批记录
+│   ├── approval-actions.log # 审批操作审计日志
+│   ├── last-snapshot.json  # OpenClaw 运行时快照
+│   └── timeline.log        # 写操作审计日志
 ├── shared/
 │   ├── schemas/           # JSON Schema 定义
 │   │   ├── task.schema.json
@@ -180,6 +205,9 @@ workspace/control-center/
 │   │   ├── exception.schema.json
 │   │   └── snapshot.schema.json
 │   └── types/
+├── scripts/               # 工具脚本
+│   ├── install-launchagent.sh
+│   └── uninstall-launchagent.sh
 └── public/
     └── index.html         # 控制面板 UI
 ```
@@ -205,6 +233,10 @@ workspace/control-center/
 | `GET /api/memory/:agentId` | 某 agent 记忆 |
 | `PUT /api/memory/:agentId` | 更新记忆 |
 | `GET /api/settings/health` | 系统健康状态 |
+| `GET /api/tasks/:taskId` | 任务详情 | 3.31 新增 |
+| `GET /api/flows` | Task Flow 列表 | 3.31 新增 |
+| `GET /api/sessions/list` | 活跃 session 列表 | 新增 |
+| `GET /api/sessions/stream` | SSE session 事件流 | 新增 |
 | `GET /api/cron/history` | Cron 执行历史 |
 
 ---

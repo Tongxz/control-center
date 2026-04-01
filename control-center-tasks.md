@@ -75,14 +75,18 @@
 
 - **状态**：[x]
 - **范围**：轮询 openclaw CLI，更新本地 snapshot
-- **输入**：`openclaw status --json`、`openclaw agents list`、`cron list`
+- **输入**：`openclaw status --json`、`openclaw agents list`、`cron list`、`openclaw sessions --all-agents --active 60 --json`、`openclaw tasks list --json`
 - **产出**：
   - `poll.js`：每 30s 执行一次 CLI 命令，写入 `runtime/last-snapshot.json`
+  - 新增 `runtime/tasks-snapshot.json`：tasks 轮询结果缓存
   - 接通 `GET /api/overview/snapshot`（替换 mock）
   - 接通 `GET /api/agents`（替换 mock）
   - 接通 `GET /api/cron/history`（替换 mock）
+  - `GET /api/overview/snapshot` 新增 `tasks` 字段（来自 tasks-snapshot.json）
   - `server.js` 启动时自动运行 poll 循环
+  - `runCli` 修复：tasks 命令 JSON 输出在 stderr 而非 stdout，优先读 stderr
 - **完成标准**：`runtime/last-snapshot.json` 每 30s 更新，API 返回真实 agent 状态
+- **3.31 变更**：tasks 命令 JSON 输出在 stderr，已修复
 
 ---
 
@@ -116,11 +120,53 @@
 - **状态**：[x]
 - **范围**：4 个 panel 接真实 API，Tasks / Exceptions 支持写操作
 - **产出**：
-  - **Tasks panel**：列表展示，新建任务（填 title/owner/priority），状态切换（todo → doing → done）
+  - **Tasks panel**：列表展示，新建任务（填 title/owner/priority），状态切换（todo → doing → done），兼容 3.31 任务结构（`taskId`, `status`, `runtime`, `createdAt`）
   - **Exceptions panel**：异常列表 + 严重级别色标，支持 ack 操作
   - **Documents panel**：MD 文件列表，点击展开内容，支持编辑保存（调 PUT）
   - **Memory panel**：各 agent 记忆列表，支持编辑保存
 - **完成标准**：Tasks 可新建，Exceptions 可 ack，Documents/Memory 可保存并写回文件
+
+---
+
+### T7.1 · 3.31 升级：Tasks API 切换到 SQLite 后端
+
+- **状态**：[x]
+- **范围**：Tasks API 从 `runtime/tasks.json` 切换到 `openclaw tasks list --json`
+- **输入**：`openclaw tasks list --json`
+- **产出**：
+  - `GET /api/tasks`：优先读 `runtime/tasks-snapshot.json`，过期（>2min）则调用 live
+  - `GET /api/tasks/:taskId`：调用 `openclaw tasks show <taskId> --json`
+  - `poll.js`：新增 tasks 轮询，写入 `runtime/tasks-snapshot.json`
+  - `runCli` 修复：tasks 命令 JSON 在 stderr，优先读 stderr
+- **完成标准**：`GET /api/tasks` 返回真实 OpenClaw 任务数据
+- **说明**：OpenClaw 3.31 将 tasks 改为 SQLite 后端，控制中心作为观察者接入
+
+---
+
+### T7.2 · 3.31 升级：Task Flows 支持
+
+- **状态**：[x]
+- **范围**：接入 Task Flows 新概念
+- **输入**：`openclaw flows list --json`
+- **产出**：
+  - `GET /api/flows`：调用 `openclaw flows list`，graceful fallback
+  - 前端 Flows tab 展示 flow 列表
+- **完成标准**：`openclaw flows list` 有返回时不报错
+
+---
+
+### T7.3 · Live Sessions SSE 监控
+
+- **状态**：[x]
+- **范围**：session-watcher.js + SSE API
+- **输入**：`~/.openclaw/agents/{agent}/sessions/*.jsonl`
+- **产出**：
+  - `session-watcher.js`：chokidar 监控 session JSONL 文件，解析 session/message 事件
+  - `GET /api/sessions/list`：活跃 session 列表（来自 poll snapshot）
+  - `GET /api/sessions/stream`：SSE 流，实时推送 session 事件
+  - 前端 Live Sessions panel：SSE 连接状态 + session 事件流
+- **完成标准**：SSE 连接到 `/api/sessions/stream` 能收到实时 session 事件
+- **已知 bug**：chokidar `ignored` 对 directories 返回 true 导致不扫描，已修复
 
 ---
 
@@ -248,9 +294,13 @@ Phase 2:
 
 Phase 3:
   T14 → T15 → T16 → T17 → T18（顺序可调）
+
+## Phase 3.31 升级（2026-04-02）
+
+**适配 OpenClaw 3.31 变更**：Tasks SQLite 后端、Task Flows、Live Sessions SSE、exec approvals 监控。已完成 T7.1、T7.2、T7.3。
 ```
 
 ---
 
-*最后更新：2026-04-01*
+*最后更新：2026-04-02*
 *关联文档：[control-center-spec.md](control-center-spec.md)*
