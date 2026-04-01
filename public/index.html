@@ -1402,7 +1402,7 @@
               <div class="label">Bearer Token 鉴权</div>
               <div class="desc">非 localhost 请求需携带 Authorization 头</div>
             </div>
-            <span class="badge ${(await fetchJSON('/api/settings/access').catch(() => ({ enabled: false }))).enabled ? 'badge-green' : 'badge-gray'}" id="access-badge">-</span>
+            <span class="badge badge-gray" id="access-badge">-</span>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <input id="access-token" type="password" placeholder="输入新 token（留空则清除）"
