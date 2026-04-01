@@ -1,0 +1,13 @@
+[
+  {
+    "approvalId": "apr-test-001",
+    "title": "测试审批",
+    "source": "main",
+    "status": "pending",
+    "riskLevel": "high",
+    "reason": "测试用审批项目",
+    "impact": "无实际影响",
+    "rollbackPlan": "撤销操作即可",
+    "requestedAt": "2026-04-01T10:00:00.000Z"
+  }
+]

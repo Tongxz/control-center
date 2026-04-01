@@ -25,6 +25,12 @@ function writeJson(relPath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
 }
 
+// ── JSONL append helper ───────────────────────────────────────
+function appendJsonl(relPath, entry) {
+  const filePath = path.join(RUNTIME_DIR, relPath);
+  fs.appendFileSync(filePath, JSON.stringify(entry) + '\n', 'utf8');
+}
+
 const app = express();
 const PORT = 18799;
 
@@ -121,6 +127,96 @@ app.get('/api/projects/:projectId/summary', (req, res) => {
 app.get('/api/exceptions', (req, res) => res.json([]));
 
 app.get('/api/approve', (req, res) => res.json([]));
+
+// ── Approvals ─────────────────────────────────────────────────
+
+// GET /api/approvals
+app.get('/api/approvals', (req, res) => {
+  const approvals = readJson('approvals.json') || [];
+  const { status } = req.query;
+  if (status) {
+    return res.json(approvals.filter(a => a.status === status));
+  }
+  res.json(approvals);
+});
+
+// GET /api/approvals/:approvalId
+app.get('/api/approvals/:approvalId', (req, res) => {
+  const approvals = readJson('approvals.json') || [];
+  const approval = approvals.find(a => a.approvalId === req.params.approvalId);
+  if (!approval) return res.status(404).json({ error: 'not found' });
+  res.json(approval);
+});
+
+// POST /api/approvals/:approvalId/approve
+app.post('/api/approvals/:approvalId/approve', (req, res) => {
+  const approvals = readJson('approvals.json') || [];
+  const idx = approvals.findIndex(a => a.approvalId === req.params.approvalId);
+  if (idx === -1) return res.status(404).json({ error: 'not found' });
+
+  const comment = req.body.comment || '';
+  approvals[idx] = {
+    ...approvals[idx],
+    status: 'approved',
+    actedAt: new Date().toISOString(),
+  };
+  writeJson('approvals.json', approvals);
+
+  const logEntry = {
+    approvalId: approvals[idx].approvalId,
+    action: 'approve',
+    comment,
+    actedAt: approvals[idx].actedAt,
+  };
+  appendJsonl('approval-actions.log', logEntry);
+
+  res.json(approvals[idx]);
+});
+
+// POST /api/approvals/:approvalId/reject
+app.post('/api/approvals/:approvalId/reject', (req, res) => {
+  const approvals = readJson('approvals.json') || [];
+  const idx = approvals.findIndex(a => a.approvalId === req.params.approvalId);
+  if (idx === -1) return res.status(404).json({ error: 'not found' });
+
+  const comment = req.body.comment || '';
+  approvals[idx] = {
+    ...approvals[idx],
+    status: 'rejected',
+    actedAt: new Date().toISOString(),
+  };
+  writeJson('approvals.json', approvals);
+
+  const logEntry = {
+    approvalId: approvals[idx].approvalId,
+    action: 'reject',
+    comment,
+    actedAt: approvals[idx].actedAt,
+  };
+  appendJsonl('approval-actions.log', logEntry);
+
+  res.json(approvals[idx]);
+});
+
+// GET /api/approval-actions
+app.get('/api/approval-actions', (req, res) => {
+  const filePath = path.join(RUNTIME_DIR, 'approval-actions.log');
+  let entries = [];
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    entries = content.trim().split('\n').filter(Boolean).map(line => {
+      try { return JSON.parse(line); }
+      catch { return null; }
+    }).filter(Boolean);
+  } catch {
+    entries = [];
+  }
+  const { approvalId } = req.query;
+  if (approvalId) {
+    entries = entries.filter(e => e.approvalId === approvalId);
+  }
+  res.json(entries);
+});
 
 // ── Docs (workspace indexer) ─────────────────────────────────
 
