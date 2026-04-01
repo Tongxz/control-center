@@ -5,6 +5,7 @@ const fs = require('fs');
 const { spawn, execSync } = require('child_process');
 const crypto = require('crypto');
 const { nanoid } = require('nanoid');
+const archiver = require('archiver');
 const indexer = require('./indexer');
 const poll = require('./poll');
 const sessionWatcher = require('./session-watcher');
@@ -860,7 +861,54 @@ app.get('/api/usage/summary', (req, res) => {
     totalTokens: acc.totalTokens + a.totalTokens,
     cost: acc.cost + a.cost,
   }), { sessionCount: 0, totalTokens: 0, cost: 0 });
-  res.json({ agents, total, generatedAt: new Date().toISOString() });
+
+  // Project dimension: aggregate from runtime/tasks.json using ownerAgentId + projectId
+  const tasks = readJson('tasks.json') || [];
+  const projects = readJson('projects.json') || [];
+  const projectMap = {};
+  for (const t of tasks) {
+    if (!t.projectId) continue;
+    const proj = projects.find(p => p.projectId === t.projectId);
+    const key = t.projectId;
+    if (!projectMap[key]) {
+      projectMap[key] = {
+        projectId: key,
+        projectName: proj ? proj.name : key,
+        taskCount: 0,
+        agentIds: new Set(),
+      };
+    }
+    projectMap[key].taskCount++;
+    if (t.ownerAgentId) projectMap[key].agentIds.add(t.ownerAgentId);
+  }
+
+  // Join agent token usage into project breakdown (by tasks owned per agent)
+  const agentUsageMap = Object.fromEntries(agents.map(a => [a.agentId, a]));
+  const byProject = Object.values(projectMap).map(p => {
+    // Estimate: sum usage of agents who have tasks in this project, weighted by task share
+    let totalTokens = 0, cost = 0;
+    for (const agentId of p.agentIds) {
+      const usage = agentUsageMap[agentId];
+      if (!usage) continue;
+      // Weight = tasks this agent has in this project / total tasks this agent owns
+      const agentTotalTasks = tasks.filter(t => t.ownerAgentId === agentId).length || 1;
+      const agentProjectTasks = tasks.filter(t => t.ownerAgentId === agentId && t.projectId === p.projectId).length;
+      const weight = agentProjectTasks / agentTotalTasks;
+      totalTokens += Math.round(usage.totalTokens * weight);
+      cost += usage.cost * weight;
+    }
+    return {
+      projectId: p.projectId,
+      projectName: p.projectName,
+      taskCount: p.taskCount,
+      agentIds: [...p.agentIds],
+      estimatedTokens: totalTokens,
+      estimatedCost: cost,
+      note: 'estimated — weighted by task ownership ratio',
+    };
+  });
+
+  res.json({ agents, total, byProject, generatedAt: new Date().toISOString() });
 });
 
 app.get('/api/usage/export.csv', (req, res) => {
@@ -880,6 +928,8 @@ const HALL_AGENTS = new Set(['main', 'forge', 'reviewer', 'sentinel']);
 
 app.get('/api/hall', (req, res) => {
   const recent = sessionWatcher.getRecentEvents(500);
+
+  // Aggregate per-agent activity
   const agentMap = {};
   for (const ev of recent) {
     const a = ev.agentId;
@@ -895,22 +945,36 @@ app.get('/api/hall', (req, res) => {
     lastActivity: a.lastActivity,
   }));
 
-  const spawnLinks = [];
-  const seen = new Set();
-  for (const ev of recent) {
-    if (ev.type === 'message' && ev.text) {
-      const m = ev.text.match(/\b(spawned?|invoke[sd]?|启动|called)\s+(\w+)/i);
-      if (m && HALL_AGENTS.has(m[2]) && m[2] !== ev.agentId) {
-        const key = `${ev.agentId}->${m[2]}-${ev.sessionId}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          spawnLinks.push({ from: ev.agentId, to: m[2], ts: ev.ts, sessionId: ev.sessionId });
+  // Precise spawn links: Agent tool calls + session_opened with parentAgentId
+  const preciseEvents = sessionWatcher.getSpawnEvents(200);
+  const spawnLinks = preciseEvents.map(ev => {
+    if (ev.type === 'spawn') {
+      return { from: ev.agentId, to: ev.targetAgent, ts: ev.ts, sessionId: ev.sessionId, via: 'agent_tool', description: ev.description || '' };
+    }
+    if (ev.type === 'session_opened' && ev.parentAgentId) {
+      return { from: ev.parentAgentId, to: ev.agentId, ts: ev.ts, sessionId: ev.sessionId, via: 'session_announce', description: '' };
+    }
+    return null;
+  }).filter(Boolean);
+
+  // Fallback: text-regex when no precise events available (e.g. older sessions)
+  if (spawnLinks.length === 0) {
+    const seen = new Set();
+    for (const ev of recent) {
+      if (ev.type === 'message' && ev.text) {
+        const m = ev.text.match(/\b(spawned?|invoke[sd]?|启动|called)\s+(\w+)/i);
+        if (m && HALL_AGENTS.has(m[2]) && m[2] !== ev.agentId) {
+          const key = `${ev.agentId}->${m[2]}-${ev.sessionId}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            spawnLinks.push({ from: ev.agentId, to: m[2], ts: ev.ts, sessionId: ev.sessionId, via: 'text_heuristic', description: '' });
+          }
         }
       }
     }
   }
 
-  res.json({ agents, spawnLinks, eventTotal: recent.length });
+  res.json({ agents, spawnLinks, eventTotal: recent.length, spawnSource: preciseEvents.length > 0 ? 'precise' : 'heuristic' });
 });
 
 // ── T16: Feishu 推送 routes ───────────────────────────────────
@@ -940,18 +1004,28 @@ app.post('/api/settings/notify/test', async (req, res) => {
 // ── T17: Audit Export ─────────────────────────────────────────
 
 app.get('/api/export/runtime', (req, res) => {
-  const bundle = { exportedAt: new Date().toISOString(), files: {} };
+  const date = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="runtime-export-${date}.zip"`);
+
+  const archive = archiver('zip', { zlib: { level: 6 } });
+  archive.on('error', (err) => {
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+  });
+  archive.pipe(res);
+
+  // Include all runtime/*.json and *.log files
   try {
     fs.readdirSync(RUNTIME_DIR)
       .filter(f => f.endsWith('.json') || f.endsWith('.log'))
-      .forEach(f => {
-        try { bundle.files[f] = fs.readFileSync(path.join(RUNTIME_DIR, f), 'utf8'); } catch {}
-      });
+      .forEach(f => archive.file(path.join(RUNTIME_DIR, f), { name: f }));
   } catch {}
-  const date = new Date().toISOString().slice(0, 10);
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Content-Disposition', `attachment; filename="runtime-export-${date}.json"`);
-  res.json(bundle);
+
+  // Include a manifest
+  const manifest = JSON.stringify({ exportedAt: new Date().toISOString(), source: 'openclaw-control-center' }, null, 2);
+  archive.append(manifest, { name: 'manifest.json' });
+
+  archive.finalize();
 });
 
 app.get('/api/export/timeline.csv', (req, res) => {
