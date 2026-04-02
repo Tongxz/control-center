@@ -1,0 +1,37 @@
+{
+  "taskId": "T1",
+  "result": "pass_with_notes",
+  "findings": [
+    {
+      "severity": "P1",
+      "file": "public/index.html",
+      "line": 1162,
+      "issue": "Active Sessions 卡片数据与 label 不匹配：label 为「Active Sessions」，但 value 渲染的是 busyAgents（忙碌 Agent 数），而 delta 箭头用的是 delta.activeSessions（活跃 Session 数）",
+      "current": "<div class=\"value\">${busyAgents}${renderDeltaArrow(delta.activeSessions)}</div>",
+      "suggestion": "若展示活跃 session 数：将 busyAgents 改为 currentSnap.sessions?.totalActive || 0；若展示忙碌 agent 数：将 label 改为「忙碌 / Total」，delta 改为 delta.busyAgents"
+    },
+    {
+      "severity": "P2",
+      "file": "public/index.html",
+      "issue": "Low 异常在 exception-summary 中未调用 renderDeltaArrow(low)，无 delta 箭头显示",
+      "suggestion": "如 Low 也需变化提示，补上 renderDeltaArrow(delta.low)"
+    }
+  ],
+  "verified": {
+    "poll_js": {
+      "prevSnapshot_timing": "✅ pollOnce 末尾 prevSnapshot = lastSnapshot（写入文件之后），时机正确",
+      "cold_start": "✅ cold start 加载磁盘 snapshot 为 lastSnapshot，prevSnapshot=null，首次 poll 后 delta 即有意义",
+      "export": "✅ getPrevSnapshot() 正确导出"
+    },
+    "server_js": {
+      "delta_logic": "✅ buildOverviewDelta 判断正确：changed + direction(same/up/down)",
+      "null_guard": "✅ !currentSnap || !previousSnap 时返回 {}，API 返回 {...snap, delta}",
+      "metrics_covered": "✅ busyAgents, totalAgents, activeSessions, cronOk, cronError, totalJobs, critical, high, medium, low 均有 delta"
+    },
+    "frontend": {
+      "renderDeltaArrow": "✅ 对 null/undefined/changed=false 均返回 ''，不会产生乱码",
+      "css_delta_arrow": "✅ .delta-arrow delta-up(绿) / delta-down(红) 样式正确"
+    }
+  },
+  "summary": "核心逻辑正确，poll.js 的 prevSnapshot 更新时机和 cold start 处理均无问题，server.js 的 delta 计算逻辑正确，renderDeltaArrow 的 null 处理安全。唯一 P1 问题：Overview 中「Active Sessions」卡片的 value 实际渲染的是 busyAgents，与 label 和 delta 字段不匹配。"
+}

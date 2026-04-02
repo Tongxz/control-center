@@ -1,0 +1,9 @@
+{
+  "taskId": "T1",
+  "status": "dev_done",
+  "round": 1,
+  "commit": "1137f89",
+  "summary": "Overview panel delta 反馈: poll.js 存储 prevSnapshot, server.js /api/overview/snapshot 返回 delta 字段, 前端渲染 ↑↓ 箭头和 hover 旧值",
+  "changedFiles": ["poll.js", "server.js", "public/index.html"],
+  "completedAt": "2026-04-02"
+}

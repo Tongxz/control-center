@@ -1,0 +1,18 @@
+{
+  "taskId": "T1",
+  "status": "fix_in_progress",
+  "round": 1,
+  "reviewRound": 1,
+  "result": "pending",
+  "findings": [
+    {
+      "severity": "P1",
+      "type": "data-mismatch",
+      "location": "public/index.html — Overview Active Sessions card",
+      "issue": "label 为「Active Sessions」，但 value 渲染的是 busyAgents（忙碌 Agent 数），delta 箭头用的是 delta.activeSessions（活跃 Session 数）。数据不匹配。",
+      "current": "<div class=\"value\">${busyAgents}${renderDeltaArrow(delta.activeSessions)}</div>",
+      "suggestion": "若展示活跃 session 数：将 busyAgents 改为 currentSnap.sessions?.totalActive || 0；若展示忙碌 agent 数：将 label 改为「忙碌 / Total」，delta 改为 delta.busyAgents"
+    }
+  ],
+  "fixInProgress": true
+}

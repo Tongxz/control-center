@@ -1121,6 +1121,7 @@
       const agents = snap.agents || [];
       const busyAgents = agents.filter(a => a.status === 'busy').length;
       const totalAgents = agents.length;
+      const activeSessions = snap.sessions?.totalActive || 0;
 
       const cronJobs = snap.cron?.jobs || [];
       const cronOk = cronJobs.filter(j => j.status === 'ok').length;
@@ -1159,7 +1160,7 @@
             <div class="label">Total 智能体</div>
           </div>
           <div class="metric">
-            <div class="value">${busyAgents}${renderDeltaArrow(delta.activeSessions)}</div>
+            <div class="value">${activeSessions}${renderDeltaArrow(delta.activeSessions)}</div>
             <div class="label">Active Sessions</div>
           </div>
         </div>

@@ -578,8 +578,19 @@ app.get('/api/exceptions', (req, res) => {
   const all = buildExceptions();
   // Default: exclude acknowledged (unless ?includeAcked=1)
   const includeAcked = req.query.includeAcked === '1';
-  const result = includeAcked ? all : all.filter(e => e.actionStatus !== 'acknowledged');
-  res.json(result);
+  const items = includeAcked ? all : all.filter(e => e.actionStatus !== 'acknowledged');
+  const counts = items.reduce((acc, item) => {
+    const severity = item.severity || 'low';
+    if (acc[severity] === undefined) acc[severity] = 0;
+    acc[severity] += 1;
+    return acc;
+  }, { critical: 0, high: 0, medium: 0, low: 0 });
+
+  res.json({
+    items,
+    counts,
+    total: items.length,
+  });
 });
 
 // ── Approvals ─────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 {
   "taskId": "T1",
   "title": "Overview delta 反馈",
-  "status": "todo",
+  "status": "dev_done",
   "owner": "forge",
   "description": "Overview panel 每个 metric 卡片显示上次值 vs 当前值对比 + ↑↓ 箭头",
   "scope": {
