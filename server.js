@@ -156,10 +156,75 @@ app.use('/api', (req, res, next) => {
 
 // ── Routes ────────────────────────────────────────────────────
 
+function buildOverviewDelta(currentSnap, previousSnap) {
+  if (!currentSnap || !previousSnap) return {};
+
+  const currentAgents = currentSnap.agents || [];
+  const previousAgents = previousSnap.agents || [];
+  const currentCronJobs = currentSnap.cron?.jobs || [];
+  const previousCronJobs = previousSnap.cron?.jobs || [];
+  const currentExc = currentSnap.exceptions || {};
+  const previousExc = previousSnap.exceptions || {};
+
+  const metrics = {
+    busyAgents: {
+      current: currentAgents.filter((a) => a.status === 'busy').length,
+      previous: previousAgents.filter((a) => a.status === 'busy').length,
+    },
+    totalAgents: {
+      current: currentAgents.length,
+      previous: previousAgents.length,
+    },
+    activeSessions: {
+      current: currentSnap.sessions?.totalActive || 0,
+      previous: previousSnap.sessions?.totalActive || 0,
+    },
+    cronOk: {
+      current: currentCronJobs.filter((j) => j.status === 'ok').length,
+      previous: previousCronJobs.filter((j) => j.status === 'ok').length,
+    },
+    cronError: {
+      current: currentCronJobs.filter((j) => j.status === 'error').length,
+      previous: previousCronJobs.filter((j) => j.status === 'error').length,
+    },
+    totalJobs: {
+      current: currentCronJobs.length,
+      previous: previousCronJobs.length,
+    },
+    critical: {
+      current: currentExc.critical || 0,
+      previous: previousExc.critical || 0,
+    },
+    high: {
+      current: currentExc.high || 0,
+      previous: previousExc.high || 0,
+    },
+    medium: {
+      current: currentExc.medium || 0,
+      previous: previousExc.medium || 0,
+    },
+    low: {
+      current: currentExc.low || 0,
+      previous: previousExc.low || 0,
+    },
+  };
+
+  return Object.fromEntries(Object.entries(metrics).map(([key, metric]) => {
+    const changed = metric.current !== metric.previous;
+    return [key, {
+      previous: metric.previous,
+      current: metric.current,
+      changed,
+      direction: !changed ? 'same' : (metric.current > metric.previous ? 'up' : 'down'),
+    }];
+  }));
+}
+
 app.get('/api/overview/snapshot', (req, res) => {
   const snap = poll.getSnapshot();
   if (!snap) return res.status(503).json({ error: 'snapshot not ready yet' });
-  res.json(snap);
+  const prevSnap = poll.getPrevSnapshot();
+  res.json({ ...snap, delta: buildOverviewDelta(snap, prevSnap) });
 });
 
 app.get('/api/agents', (req, res) => {

@@ -253,6 +253,15 @@
       margin-top: 20px;
     }
 
+    /* ── Delta Arrows ── */
+    .delta-arrow {
+      font-size: 12px;
+      margin-left: 4px;
+      font-weight: 700;
+    }
+    .delta-arrow.delta-up { color: #16a34a; }
+    .delta-arrow.delta-down { color: #dc2626; }
+
     /* ── Divider ── */
     hr {
       border: none;
@@ -1085,6 +1094,14 @@
   showPanel('overview');
 
   // ── 总览 Panel ──────────────────────────────────────────
+  function renderDeltaArrow(delta) {
+    if (!delta || !delta.changed) return '';
+    const cls = delta.direction === 'up' ? 'delta-up' : 'delta-down';
+    const icon = delta.direction === 'up' ? '↑' : '↓';
+    const title = '上次：' + delta.previous;
+    return `<span class="delta-arrow ${cls}" title="${title}">${icon}</span>`;
+  }
+
   async function loadOverview() {
     const panel = document.getElementById('panel-overview');
     if (!panel) return;
@@ -1092,6 +1109,7 @@
 
     try {
       const snap = await fetchJSON('/api/overview/snapshot');
+      const delta = snap.delta || {};
 
       const gw = snap.gateway || {};
       const version = gw.version || 'unknown';
@@ -1133,15 +1151,15 @@
         <h2>Active 智能体</h2>
         <div class="metric-grid">
           <div class="metric">
-            <div class="value">${busyAgents}/${totalAgents}</div>
+            <div class="value">${busyAgents}/${totalAgents}${renderDeltaArrow(delta.busyAgents)}</div>
             <div class="label">忙碌 / Total</div>
           </div>
           <div class="metric">
-            <div class="value">${totalAgents}</div>
+            <div class="value">${totalAgents}${renderDeltaArrow(delta.totalAgents)}</div>
             <div class="label">Total 智能体</div>
           </div>
           <div class="metric">
-            <div class="value">${busyAgents}</div>
+            <div class="value">${busyAgents}${renderDeltaArrow(delta.activeSessions)}</div>
             <div class="label">Active Sessions</div>
           </div>
         </div>
@@ -1149,15 +1167,15 @@
         <h2>定时任务</h2>
         <div class="metric-grid">
           <div class="metric">
-            <div class="value" style="color:#16a34a;">${cronOk}</div>
+            <div class="value" style="color:#16a34a;">${cronOk}${renderDeltaArrow(delta.cronOk)}</div>
             <div class="label">OK</div>
           </div>
           <div class="metric">
-            <div class="value" style="color:#dc2626;">${cronError}</div>
+            <div class="value" style="color:#dc2626;">${cronError}${renderDeltaArrow(delta.cronError)}</div>
             <div class="label">Error</div>
           </div>
           <div class="metric">
-            <div class="value">${cronJobs.length}</div>
+            <div class="value">${cronJobs.length}${renderDeltaArrow(delta.totalJobs)}</div>
             <div class="label">Total Jobs</div>
           </div>
         </div>
@@ -1165,15 +1183,15 @@
         <h2>异常中心 Summary</h2>
         <div class="exception-summary">
           <div class="exception-pill critical">
-            <div class="count">${exc.critical || 0}</div>
+            <div class="count">${exc.critical || 0}${renderDeltaArrow(delta.critical)}</div>
             <div class="label">Critical</div>
           </div>
           <div class="exception-pill high">
-            <div class="count">${exc.high || 0}</div>
+            <div class="count">${exc.high || 0}${renderDeltaArrow(delta.high)}</div>
             <div class="label">High</div>
           </div>
           <div class="exception-pill medium">
-            <div class="count">${exc.medium || 0}</div>
+            <div class="count">${exc.medium || 0}${renderDeltaArrow(delta.medium)}</div>
             <div class="label">Medium</div>
           </div>
           <div class="exception-pill low">

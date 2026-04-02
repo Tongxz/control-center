@@ -9,6 +9,7 @@ const TASKS_SNAPSHOT_FILE = path.join(__dirname, 'runtime', 'tasks-snapshot.json
 const POLL_INTERVAL_MS = 30_000;
 
 let lastSnapshot = null;
+let prevSnapshot = null;
 
 // ── CLI Helpers ────────────────────────────────────────────────
 
@@ -214,6 +215,7 @@ async function pollOnce() {
     };
     fs.writeFileSync(TASKS_SNAPSHOT_FILE, JSON.stringify(tasksSnapshot, null, 2), 'utf8');
     fs.writeFileSync(SNAPSHOT_FILE, JSON.stringify(snapshot, null, 2), 'utf8');
+    prevSnapshot = lastSnapshot;
     lastSnapshot = snapshot;
     console.log(`[poll] snapshot updated at ${snapshot.generatedAt}, agents=${snapshot.agents.length}, jobs=${snapshot.cron.jobs.length}, tasks=${tasksSnapshot.count}`);
   } catch (err) {
@@ -243,13 +245,18 @@ function getSnapshot() {
   return lastSnapshot;
 }
 
+function getPrevSnapshot() {
+  return prevSnapshot;
+}
+
 // Load last snapshot from disk if available (for cold start)
 try {
   if (fs.existsSync(SNAPSHOT_FILE)) {
     lastSnapshot = JSON.parse(fs.readFileSync(SNAPSHOT_FILE, 'utf8'));
+    prevSnapshot = null;
   }
 } catch (err) {
   console.error('[poll] failed to load existing snapshot:', err.message);
 }
 
-module.exports = { start, stop, getSnapshot };
+module.exports = { start, stop, getSnapshot, getPrevSnapshot };
