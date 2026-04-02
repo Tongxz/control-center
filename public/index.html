@@ -196,6 +196,27 @@
       color: #1a1a1a;
     }
 
+    .metric-value {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 300ms ease, transform 300ms ease, color 300ms ease;
+      will-change: opacity, transform, color;
+    }
+
+    .metric-value.updating {
+      opacity: 0.7;
+      transform: translateY(-4px);
+    }
+
+    .metric-value.flash-up {
+      color: #16a34a !important;
+    }
+
+    .metric-value.flash-down {
+      color: #dc2626 !important;
+    }
+
     .metric .label {
       font-size: 11px;
       color: #9ca3af;
@@ -1010,11 +1031,11 @@
   // ── Panel Content Templates ──────────────────────────────────
 
   let _exceptionPollTimer = null;
-  let _lastExceptionSnapshot = { total: 0, counts: { critical: 0, high: 0, medium: 0, low: 0 } };
   const _notifiedExceptionKeys = new Set();
   let _notificationPermissionRequested = false;
-  let _sidebarSseConnected = false;
-  let _exceptionRefreshScheduled = false;
+
+  const tabOrder = ['overview', 'agents', 'tasks', 'projects', 'exceptions', 'documents', 'memory', 'settings', 'approvals', 'timeline', 'sessions', 'usage', 'hall'];
+  let currentTab = 'overview';
 
   const panels = {
     sessions: `
@@ -1038,6 +1059,10 @@
     `,
     tasks: `
       <h1>任务</h1>
+      <div id="tasks-toolbar" class="projects-toolbar">
+        <span style="font-size:13px;color:#9ca3af;">查看当前任务列表</span>
+        <button class="btn btn-primary" id="btn-new-task">+ 新建任务</button>
+      </div>
       <div id="tasks-container">
         <div class="loading">Loading tasks...</div>
       </div>
@@ -1144,12 +1169,114 @@
   showPanel('overview');
 
   // ── 总览 Panel ──────────────────────────────────────────
+  const overviewMetricState = new Map();
+
   function renderDeltaArrow(delta) {
     if (!delta || !delta.changed) return '';
     const cls = delta.direction === 'up' ? 'delta-up' : 'delta-down';
     const icon = delta.direction === 'up' ? '↑' : '↓';
     const title = '上次：' + delta.previous;
     return `<span class="delta-arrow ${cls}" title="${title}">${icon}</span>`;
+  }
+
+  function renderAnimatedMetricValue(key, value, options = {}) {
+    const {
+      type = 'text',
+      fontSize = '',
+      baseColor = '',
+      tone = '',
+      parts = null,
+      delta = null
+    } = options;
+
+    const styleParts = [];
+    if (fontSize) styleParts.push(`font-size:${fontSize};`);
+    if (baseColor) styleParts.push(`color:${baseColor};`);
+
+    const attrs = [
+      `class="value metric-value${tone ? ` ${tone}` : ''}"`,
+      `data-key="${key}"`,
+      `data-type="${type}"`,
+      `data-value="${String(value)}"`
+    ];
+
+    if (styleParts.length) attrs.push(`style="${styleParts.join('')}"`);
+    if (parts?.current != null) attrs.push(`data-current="${parts.current}"`);
+    if (parts?.total != null) attrs.push(`data-total="${parts.total}"`);
+
+    return `<div ${attrs.join(' ')}><span class="metric-number">${value}</span>${renderDeltaArrow(delta)}</div>`;
+  }
+
+  function animateOverviewMetrics(panel) {
+    panel.querySelectorAll('.metric-value[data-key]').forEach(el => {
+      const key = el.dataset.key;
+      const type = el.dataset.type;
+      const nextValue = el.dataset.value;
+      const previous = overviewMetricState.get(key);
+
+      if (!previous) {
+        overviewMetricState.set(key, { value: nextValue });
+        return;
+      }
+
+      if (previous.value === nextValue) {
+        overviewMetricState.set(key, { value: nextValue });
+        return;
+      }
+
+      const nextNumber = Number(nextValue);
+      const previousNumber = Number(previous.value);
+      const direction = Number.isFinite(nextNumber) && Number.isFinite(previousNumber)
+        ? (nextNumber >= previousNumber ? 'up' : 'down')
+        : 'up';
+      const flashClass = direction === 'up' ? 'flash-up' : 'flash-down';
+      const numberEl = el.querySelector('.metric-number');
+
+      el.classList.add('updating', flashClass);
+      setTimeout(() => {
+        el.classList.remove('updating', flashClass);
+      }, 320);
+
+      if (type === 'number' && numberEl) {
+        const start = Number(previous.value);
+        const end = Number(nextValue);
+        const steps = 6;
+        let step = 0;
+        numberEl.textContent = String(start);
+        const timer = setInterval(() => {
+          step += 1;
+          const progress = step / steps;
+          numberEl.textContent = String(Math.round(start + (end - start) * progress));
+          if (step >= steps) {
+            clearInterval(timer);
+            numberEl.textContent = nextValue;
+          }
+        }, 50);
+      } else if (type === 'ratio' && numberEl) {
+        const startCurrent = Number(previous.current ?? previous.value.split('/')[0] ?? 0);
+        const endCurrent = Number(el.dataset.current ?? nextValue.split('/')[0] ?? 0);
+        const total = el.dataset.total ?? nextValue.split('/')[1] ?? '';
+        const steps = 6;
+        let step = 0;
+        numberEl.textContent = `${startCurrent}/${total}`;
+        const timer = setInterval(() => {
+          step += 1;
+          const progress = step / steps;
+          const current = Math.round(startCurrent + (endCurrent - startCurrent) * progress);
+          numberEl.textContent = `${current}/${total}`;
+          if (step >= steps) {
+            clearInterval(timer);
+            numberEl.textContent = nextValue;
+          }
+        }, 50);
+      }
+
+      overviewMetricState.set(key, {
+        value: nextValue,
+        current: el.dataset.current,
+        total: el.dataset.total
+      });
+    });
   }
 
   async function loadOverview() {
@@ -1186,11 +1313,11 @@
         <h2>Gateway 状态</h2>
         <div class="metric-grid">
           <div class="metric">
-            <div class="value">${version}</div>
+            ${renderAnimatedMetricValue('gateway-version', version)}
             <div class="label">网关版本</div>
           </div>
           <div class="metric">
-            <div class="value" style="font-size:18px;color:#16a34a;">${uptime ? uptime : '—'}</div>
+            ${renderAnimatedMetricValue('gateway-uptime', uptime ? uptime : '—', { fontSize: '18px', baseColor: '#16a34a' })}
             <div class="label">Uptime</div>
           </div>
           <div class="metric">
@@ -1202,15 +1329,19 @@
         <h2>Active 智能体</h2>
         <div class="metric-grid">
           <div class="metric">
-            <div class="value">${busyAgents}/${totalAgents}${renderDeltaArrow(delta.busyAgents)}</div>
+            ${renderAnimatedMetricValue('agents-busy-total', `${busyAgents}/${totalAgents}`, {
+              type: 'ratio',
+              parts: { current: busyAgents, total: totalAgents },
+              delta: delta.busyAgents
+            })}
             <div class="label">忙碌 / Total</div>
           </div>
           <div class="metric">
-            <div class="value">${totalAgents}${renderDeltaArrow(delta.totalAgents)}</div>
+            ${renderAnimatedMetricValue('agents-total', totalAgents, { type: 'number', delta: delta.totalAgents })}
             <div class="label">Total 智能体</div>
           </div>
           <div class="metric">
-            <div class="value">${activeSessions}${renderDeltaArrow(delta.activeSessions)}</div>
+            ${renderAnimatedMetricValue('sessions-active', activeSessions, { type: 'number', delta: delta.activeSessions })}
             <div class="label">Active Sessions</div>
           </div>
         </div>
@@ -1218,15 +1349,15 @@
         <h2>定时任务</h2>
         <div class="metric-grid">
           <div class="metric">
-            <div class="value" style="color:#16a34a;">${cronOk}${renderDeltaArrow(delta.cronOk)}</div>
+            ${renderAnimatedMetricValue('cron-ok', cronOk, { type: 'number', baseColor: '#16a34a', delta: delta.cronOk })}
             <div class="label">OK</div>
           </div>
           <div class="metric">
-            <div class="value" style="color:#dc2626;">${cronError}${renderDeltaArrow(delta.cronError)}</div>
+            ${renderAnimatedMetricValue('cron-error', cronError, { type: 'number', baseColor: '#dc2626', delta: delta.cronError })}
             <div class="label">Error</div>
           </div>
           <div class="metric">
-            <div class="value">${cronJobs.length}${renderDeltaArrow(delta.totalJobs)}</div>
+            ${renderAnimatedMetricValue('cron-total', cronJobs.length, { type: 'number', delta: delta.totalJobs })}
             <div class="label">Total Jobs</div>
           </div>
         </div>
@@ -1253,6 +1384,8 @@
 
         <div class="last-updated">Last updated: ${lastUpdated}</div>
       `;
+
+      animateOverviewMetrics(panel);
     } catch (err) {
       panel.innerHTML = `
         <h1>总览</h1>
@@ -1547,13 +1680,15 @@
     if (!panel) return;
     panel.innerHTML = '<div class="loading">Loading tasks...</div>';
 
+    const btn = document.getElementById('btn-new-task');
+    if (btn) btn.onclick = () => showNewTaskModal();
+
     try {
       const tasks = await fetchJSON('/api/tasks');
 
       if (!tasks.length) {
         panel.innerHTML = `
-          <div class="empty" style="padding:8px 0 16px;">暂无任务</div>
-          <button class="tab-btn" disabled style="color:#9ca3af;cursor:not-allowed;">创建任务</button>
+          <div class="empty" style="padding:8px 0 16px;">暂无任务，点击右上角「新建任务」创建</div>
         `;
         return;
       }
@@ -1972,6 +2107,59 @@
     };
 
     // Close on overlay click
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.remove();
+    });
+  }
+
+  function showNewTaskModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <h2>新建任务</h2>
+        <div class="modal-field">
+          <label>任务标题 *</label>
+          <input type="text" id="task-title" placeholder="输入任务标题" autofocus />
+        </div>
+        <div class="modal-field">
+          <label>Owner Agent</label>
+          <input type="text" id="task-owner" placeholder="main" />
+        </div>
+        <div class="modal-field">
+          <label>Project ID</label>
+          <input type="text" id="task-project" placeholder="可选" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="task-modal-cancel">取消</button>
+          <button class="btn btn-primary" id="task-modal-submit">创建</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#task-modal-cancel').onclick = () => overlay.remove();
+    overlay.querySelector('#task-modal-submit').onclick = async () => {
+      const title = document.getElementById('task-title').value.trim();
+      const ownerAgentId = document.getElementById('task-owner').value.trim() || 'main';
+      const projectId = document.getElementById('task-project').value.trim() || null;
+      if (!title) {
+        document.getElementById('task-title').style.borderColor = '#dc2626';
+        return;
+      }
+      try {
+        await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, ownerAgentId, projectId }),
+        });
+        overlay.remove();
+        loadTasks();
+      } catch (err) {
+        alert('创建失败: ' + err.message);
+      }
+    };
+
     overlay.addEventListener('click', e => {
       if (e.target === overlay) overlay.remove();
     });
@@ -2690,6 +2878,7 @@
   // ── Panel Injection Helpers ────────────────────────────────────
   // Replace static panel HTML with dynamic-loading container
   function injectPanelHTML(tab) {
+    currentTab = tab;
     const staticPanels = {
       overview: '<div id="panel-overview"></div>',
       agents: '<div id="panel-agents"></div>',
@@ -2958,23 +3147,28 @@
           badge.classList.toggle('visible', total > 0);
         }
 
-        // Browser notification for new critical/high
-        if (total > 0) {
-          const newCritical = exceptions.filter(e =>
-            (e.severity === 'critical' || e.severity === 'high') &&
-            !_notifiedExceptionKeys.has(e.exceptionId)
-          );
-          if (newCritical.length) {
-            newCritical.forEach(e => _notifiedExceptionKeys.add(e.exceptionId));
-            if (Notification.permission === 'granted') {
-              newCritical.forEach(e => new Notification('OpenClaw 异常告警', {
+        // Rebuild notified set with current API IDs to prevent memory leak
+        _notifiedExceptionKeys.clear();
+        exceptions.forEach(e => { if (e.actionStatus !== 'pending') return; if (e.severity === 'critical' || e.severity === 'high') _notifiedExceptionKeys.add(e.exceptionId); });
+
+        // Browser notification for new critical/high (only notify for pending exceptions)
+        const pendingExceptions = exceptions.filter(e => e.actionStatus === 'pending');
+        const newCritical = pendingExceptions.filter(e =>
+          (e.severity === 'critical' || e.severity === 'high') &&
+          !_notifiedExceptionKeys.has(e.exceptionId)
+        );
+        if (newCritical.length) {
+          if (Notification.permission === 'granted') {
+            newCritical.forEach(e => {
+              _notifiedExceptionKeys.add(e.exceptionId);
+              new Notification('OpenClaw 异常告警', {
                 body: `[${e.severity.toUpperCase()}] ${e.message}`,
                 tag: e.exceptionId,
-              }));
-            } else if (Notification.permission !== 'denied' && !_notificationPermissionRequested) {
-              _notificationPermissionRequested = true;
-              Notification.requestPermission();
-            }
+              });
+            });
+          } else if (Notification.permission !== 'denied' && !_notificationPermissionRequested) {
+            _notificationPermissionRequested = true;
+            Notification.requestPermission();
           }
         }
       }).catch(() => {});
@@ -3012,6 +3206,56 @@
       document.getElementById('sidebar-approvals-sse')?.classList.toggle('connected', connected);
     }, 5000);
   }
+
+  window.addEventListener('keydown', (event) => {
+    const target = event.target;
+    const tagName = target?.tagName?.toLowerCase();
+    const isTypingTarget = tagName === 'input' || tagName === 'textarea' || target?.isContentEditable;
+    if (isTypingTarget || event.metaKey || event.ctrlKey || event.altKey) return;
+
+    const key = event.key.toLowerCase();
+
+    if (/^[1-9]$/.test(key)) {
+      const tab = tabOrder[Number(key) - 1];
+      if (!tab) return;
+      event.preventDefault();
+      document.querySelector(`.tab-btn[data-tab="${tab}"]`)?.click();
+      return;
+    }
+
+    if (key === 'r') {
+      const refreshMap = {
+        overview: loadOverview,
+        agents: loadAgents,
+        tasks: loadTasks,
+        projects: loadProjects,
+        exceptions: loadExceptions,
+        documents: loadDocs,
+        memory: load记忆,
+        settings: loadSettings,
+        approvals: loadApprovals,
+        timeline: loadTimeline,
+        sessions: loadSessions,
+        usage: loadUsage,
+        hall: loadHall,
+      };
+      const refresh = refreshMap[currentTab];
+      if (!refresh) return;
+      event.preventDefault();
+      refresh();
+      return;
+    }
+
+    if (key === 'n') {
+      if (currentTab === 'tasks') {
+        event.preventDefault();
+        document.getElementById('btn-new-task')?.click();
+      } else if (currentTab === 'projects') {
+        event.preventDefault();
+        document.getElementById('btn-new-project')?.click();
+      }
+    }
+  });
 </script>
 
 </body>
