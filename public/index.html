@@ -1695,25 +1695,38 @@
             const msg = document.getElementById('doc-save-msg');
             const err = document.getElementById('doc-save-err');
             const btn = document.getElementById('btn-save-doc');
-            if (!btn) return;
+            if (!btn || !msg) return;
+            const originalText = btn.textContent;
             btn.disabled = true;
+            btn.textContent = '保存中...';
+            msg.style.color = '#16a34a';
+            msg.style.display = 'none';
+            if (err) err.style.display = 'none';
             try {
               const r = await fetch('/api/docs/' + encodeURIComponent(id), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content })
               });
-              if (r.ok) {
-                if (msg) { msg.style.display = 'inline'; setTimeout(() => msg.style.display = 'none', 2000); }
-                if (err) err.style.display = 'none';
-              } else {
-                const body = await r.json().catch(() => ({}));
-                if (err) { err.textContent = body.error || ('HTTP ' + r.status); err.style.display = 'inline'; }
+              if (!r.ok) {
+                const errData = await r.json().catch(() => ({}));
+                msg.style.color = '#dc2626';
+                msg.textContent = '保存失败: ' + (errData.error || 'HTTP ' + r.status);
+                msg.style.display = 'inline';
+                setTimeout(() => { msg.style.display = 'none'; msg.style.color = '#16a34a'; }, 3000);
+                return;
               }
-            } catch (e) {
-              if (err) { err.textContent = e.message || '保存失败'; err.style.display = 'inline'; }
+              msg.textContent = '已保存';
+              msg.style.display = 'inline';
+              setTimeout(() => msg.style.display = 'none', 2000);
+            } catch (err) {
+              msg.style.color = '#dc2626';
+              msg.textContent = '保存失败: ' + err.message;
+              msg.style.display = 'inline';
+              setTimeout(() => { msg.style.display = 'none'; msg.style.color = '#16a34a'; }, 3000);
             } finally {
               btn.disabled = false;
+              btn.textContent = originalText;
             }
           });
           // Update active state without full re-render
@@ -1995,25 +2008,38 @@
             const msg = document.getElementById('mem-save-msg');
             const err = document.getElementById('mem-save-err');
             const btn = document.getElementById('btn-save-mem');
-            if (!btn) return;
+            if (!btn || !msg) return;
+            const originalText = btn.textContent;
             btn.disabled = true;
+            btn.textContent = '保存中...';
+            msg.style.color = '#16a34a';
+            msg.style.display = 'none';
+            if (err) err.style.display = 'none';
             try {
               const r = await fetch('/api/memory/' + encodeURIComponent(agentId), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content })
               });
-              if (r.ok) {
-                if (msg) { msg.style.display = 'inline'; setTimeout(() => msg.style.display = 'none', 2000); }
-                if (err) err.style.display = 'none';
-              } else {
-                const body = await r.json().catch(() => ({}));
-                if (err) { err.textContent = body.error || ('HTTP ' + r.status); err.style.display = 'inline'; }
+              if (!r.ok) {
+                const errData = await r.json().catch(() => ({}));
+                msg.style.color = '#dc2626';
+                msg.textContent = '保存失败: ' + (errData.error || 'HTTP ' + r.status);
+                msg.style.display = 'inline';
+                setTimeout(() => { msg.style.display = 'none'; msg.style.color = '#16a34a'; }, 3000);
+                return;
               }
-            } catch (e) {
-              if (err) { err.textContent = e.message || '保存失败'; err.style.display = 'inline'; }
+              msg.textContent = '已保存';
+              msg.style.display = 'inline';
+              setTimeout(() => msg.style.display = 'none', 2000);
+            } catch (err) {
+              msg.style.color = '#dc2626';
+              msg.textContent = '保存失败: ' + err.message;
+              msg.style.display = 'inline';
+              setTimeout(() => { msg.style.display = 'none'; msg.style.color = '#16a34a'; }, 3000);
             } finally {
               btn.disabled = false;
+              btn.textContent = originalText;
             }
           });
         } catch (err) {
