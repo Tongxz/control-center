@@ -1031,7 +1031,7 @@
   // ── Panel Content Templates ──────────────────────────────────
 
   let _exceptionPollTimer = null;
-  const _notifiedExceptionKeys = new Set();
+  let _notifiedExceptionKeys = new Set();
   let _notificationPermissionRequested = false;
 
   const tabOrder = ['overview', 'agents', 'tasks', 'projects', 'exceptions', 'documents', 'memory', 'settings', 'approvals', 'timeline', 'sessions', 'usage', 'hall'];
@@ -3137,10 +3137,9 @@
     fetch('/api/exceptions')
       .then(r => r.ok ? r.json() : [])
       .then(exceptions => {
-        const pendingExceptions = (Array.isArray(exceptions) ? exceptions : []).filter(e => e.actionStatus === 'pending');
+        exceptions = Array.isArray(exceptions) ? exceptions : [];
+        const pendingExceptions = exceptions.filter(e => e.actionStatus === 'pending');
         const total = pendingExceptions.length;
-        const counts = { critical: 0, high: 0, medium: 0, low: 0 };
-        pendingExceptions.forEach(e => { if (counts[e.severity] !== undefined) counts[e.severity]++; });
 
         const badge = document.getElementById('sidebar-exceptions-badge');
         if (badge) {
@@ -3148,10 +3147,12 @@
           badge.classList.toggle('visible', total > 0);
         }
 
+        const previouslyNotifiedExceptionKeys = _notifiedExceptionKeys;
+
         // Browser notification for new critical/high (only pending exceptions)
         const newCritical = pendingExceptions.filter(e =>
           (e.severity === 'critical' || e.severity === 'high') &&
-          !_notifiedExceptionKeys.has(e.exceptionId)
+          !previouslyNotifiedExceptionKeys.has(e.exceptionId)
         );
         if (newCritical.length) {
           if (Notification.permission === 'granted') {
@@ -3168,11 +3169,8 @@
           }
         }
 
-        // Prune stale IDs no longer in API to prevent memory leak
-        const currentIds = new Set(pendingExceptions.map(e => e.exceptionId));
-        for (const id of _notifiedExceptionKeys) {
-          if (!currentIds.has(id)) _notifiedExceptionKeys.delete(id);
-        }
+        // Rebuild notified set from current API IDs to prevent stale dedupe / memory leak
+        _notifiedExceptionKeys = new Set(exceptions.map(e => e.exceptionId));
       }).catch(() => {});
   }
 

@@ -1,0 +1,24 @@
+{
+  "taskId": "T2",
+  "status": "fix_in_progress",
+  "round": 2,
+  "reviewRound": 1,
+  "result": "pending",
+  "findings": [
+    {
+      "severity": "P1",
+      "type": "dead-code",
+      "location": "public/index.html ~3142-3143",
+      "issue": "变量 `counts` 被声明和赋值，但从未被读取使用，属于死代码。",
+      "suggestion": "删除 counts 相关两行（line 3142-3143）：const counts = {...} 和对应的 forEach。"
+    },
+    {
+      "severity": "P1",
+      "type": "dead-code",
+      "location": "public/index.html ~3150",
+      "issue": "pendingExceptions 在 line 3144 已用 const 声明一次，在 line 3150 又被 const 重复声明，前者被后者遮蔽成为死代码。",
+      "suggestion": "删除 line 3150 的 `const pendingExceptions = ` 部分，保留 filter 表达式；或将 line 3144 改为 let，line 3150 改为赋值表达式。"
+    }
+  ],
+  "fixInProgress": true
+}

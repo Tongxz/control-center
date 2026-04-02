@@ -1,0 +1,49 @@
+{
+  "taskId": "T2",
+  "status": "verify_done",
+  "round": 1,
+  "result": "failed",
+  "p0Status": {
+    "p0-race-condition": "passed",
+    "p0-memory-leak": "passed"
+  },
+  "findings": [
+    {
+      "severity": "P0",
+      "type": "race-condition",
+      "status": "fixed",
+      "location": "public/index.html ~3162-3171",
+      "detail": "通知去重竞态已正确修复。先判断 Notification.permission === 'granted'，只在 granted 分支内 add Set + 发通知。default 分支只请求权限不 add。denied 分支不处理也不 add。逻辑顺序正确。"
+    },
+    {
+      "severity": "P0",
+      "type": "memory-leak",
+      "status": "fixed",
+      "location": "public/index.html ~3173-3176",
+      "detail": "内存泄漏已正确修复。每次 fetch 后用 currentIds = new Set(pendingExceptions.map(...)) 重建比对，删除已消失的 ID。_notifiedExceptionKeys 不会再无限增长。"
+    },
+    {
+      "severity": "P1",
+      "type": "dead-code",
+      "location": "public/index.html ~3142-3143",
+      "issue": "变量 `counts` 被声明、赋值，但从未被读取使用。属于遗留死代码。",
+      "suggestion": "删除 counts 相关两行（line 3142-3143）：const counts = {...} 和对应的 forEach。"
+    },
+    {
+      "severity": "P1",
+      "type": "dead-code",
+      "location": "public/index.html ~3150 (line 3150 重复声明 pendingExceptions)",
+      "issue": "pendingExceptions 在 line 3144 已声明一次，在 line 3150 被 const 重复声明。前者被后者遮蔽（shadowed），前者成为死代码。",
+      "suggestion": "删除 line 3150 的 `const pendingExceptions = ` 部分，只保留 filter 调用表达式：const newCritical = (Array.isArray(exceptions) ? exceptions : []).filter(e => e.actionStatus === 'pending').filter(e => ...)。或者将 line 3144 的 const 改为 let，line 3150 改为赋值表达式。"
+    },
+    {
+      "severity": "P1",
+      "type": "page-visibility-api",
+      "status": "passed",
+      "location": "public/index.html ~3179-3192",
+      "detail": "Page Visibility API 使用正确：hidden 时 stopBadgeTimer()，visible 时 startBadgeTimer()。防止页面不可见时做无谓轮询。_badgeIntervalId 去重检查（if (_badgeIntervalId) return）防止重复创建 interval。"
+    }
+  ],
+  "summary": "两个 P0 问题均已正确修复。P1 发现 2 处死代码（counts 变量、pendingExceptions 重复声明），Page Visibility API 实现正确。需删除死代码后方可通过。",
+  "completedAt": "2026-04-02T23:02:00+08:00"
+}

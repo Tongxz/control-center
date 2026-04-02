@@ -1,24 +1,7 @@
 {
-  "taskId": "T2",
-  "status": "fix_in_progress",
-  "round": 1,
-  "reviewRound": 1,
-  "result": "pending",
-  "findings": [
-    {
-      "severity": "P0",
-      "type": "race-condition",
-      "location": "public/index.html — updateSidebarExceptions(), line ~2968",
-      "issue": "通知去重存在竞态条件：先 _notifiedExceptionKeys.add(exceptionId)，再检查 Notification.permission。permission='default' 时，异常被加入 Set（标记已通知），再 requestPermission()。用户授权后异常已标记，不会再发通知，漏通知。",
-      "suggestion": "调整顺序：先判断 permission === 'granted'，在 granted 分支内做 add + Notification。permission !== 'granted' 时不加入 Set，只在 'default' 时请求权限。"
-    },
-    {
-      "severity": "P0",
-      "type": "memory-leak",
-      "location": "public/index.html — updateSidebarExceptions(), line ~2968",
-      "issue": "_notifiedExceptionKeys Set 永不清理。异常被 acknowledge 后从 API 消失，但其 exceptionId 永久留在 Set 中。若将来 exceptionId 复用，会错误跳过通知。",
-      "suggestion": "每次 fetch 完成后用当前 API 返回的 exceptionId 列表重建 Set：\n_notifiedExceptionKeys = new Set(exceptions.map(e => e.exceptionId));"
-    }
-  ],
-  "fixInProgress": true
+  "task": "T2.fix.r1",
+  "fixed": {
+    "P0-1": true,
+    "P0-2": true
+  }
 }

@@ -1,7 +1,7 @@
 {
   "taskId": "T2",
   "title": "Sidebar 异常 badge + SSE 感知",
-  "status": "dev_done",
+  "status": "closed",
   "owner": "forge",
   "description": "Sidebar 异常/审批 tab 加红色数字 badge，critical/high 异常触发浏览器通知",
   "scope": {

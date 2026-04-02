@@ -1,7 +1,7 @@
 {
   "taskId": "T4",
   "title": "快捷键支持",
-  "status": "todo",
+  "status": "dev_done",
   "owner": "forge",
   "description": "前端加 keydown listener：1-9 切换 tab，r 刷新当前 panel，n 新建任务（Tasks/Projects）",
   "scope": ["index.html"],
