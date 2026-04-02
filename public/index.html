@@ -1030,6 +1030,8 @@
 
   // ── Panel Content Templates ──────────────────────────────────
 
+  let _exceptionPollTimer = null;
+  const _notifiedExceptionKeys = new Set();
   let _notificationPermissionRequested = false;
 
   const tabOrder = ['overview', 'agents', 'tasks', 'projects', 'exceptions', 'documents', 'memory', 'settings', 'approvals', 'timeline', 'sessions', 'usage', 'hall'];
@@ -3147,7 +3149,6 @@
         }
 
         // Browser notification for new critical/high (only pending exceptions)
-        const pendingExceptions = (Array.isArray(exceptions) ? exceptions : []).filter(e => e.actionStatus === 'pending');
         const newCritical = pendingExceptions.filter(e =>
           (e.severity === 'critical' || e.severity === 'high') &&
           !_notifiedExceptionKeys.has(e.exceptionId)
