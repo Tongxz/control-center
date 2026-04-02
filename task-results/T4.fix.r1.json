@@ -1,0 +1,9 @@
+{
+  "task": "T4",
+  "round": 1,
+  "fixed": true,
+  "bug": "P1 modal re-entry guard",
+  "files": [
+    "public/index.html"
+  ]
+}
