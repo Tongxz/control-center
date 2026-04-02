@@ -1,0 +1,24 @@
+{
+  "task": "T4",
+  "round": "dev.r1",
+  "status": "done",
+  "summary": "为 control-center 增加快捷键支持：1-9 切换前 9 个 sidebar tab，r 刷新当前 panel，n 在 Tasks/Projects 面板触发既有新建按钮。",
+  "changes": [
+    {
+      "file": "public/index.html",
+      "details": [
+        "新增 tabOrder/currentTab，用于快捷键切换与刷新当前 panel",
+        "在 Tasks 面板补充新建任务按钮和 showNewTaskModal()，复用既有 modal/POST /api/tasks 流程",
+        "在 script 末尾新增 window keydown listener，过滤 input/textarea/contenteditable 焦点，支持 1-9 / r / n 快捷键"
+      ]
+    }
+  ],
+  "validation": [
+    "使用 Node 对 inline script 执行 new Function 校验，结果为 script syntax ok",
+    "检查 diff，确认 n 快捷键通过 click 触发 #btn-new-task / #btn-new-project，不重复创建弹窗"
+  ],
+  "risk": [
+    "数字快捷键当前仅覆盖前 9 个 sidebar tab，符合本任务要求；第 10 个及之后 tab 暂无数字快捷键"
+  ],
+  "timestamp": "2026-04-02T22:55:00+08:00"
+}

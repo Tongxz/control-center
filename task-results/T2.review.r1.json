@@ -1,0 +1,79 @@
+{
+  "taskId": "T2",
+  "status": "reviewed",
+  "round": 1,
+  "reviewer": "reviewer",
+  "reviewedAt": "2026-04-02",
+  "verdict": "需修改",
+  "summary": "功能基本正确，badge 和 SSE dot 渲染无误，Notification.permission 三态处理思路正确。但存在两个必须修复的 bug：通知去重的竞态条件和 Set 内存泄漏。另外有多个 dead code 和体验问题。",
+  "issues": [
+    {
+      "severity": "P0",
+      "category": "功能正确性",
+      "location": "updateSidebarExceptions()，第 2968 行附近",
+      "title": "通知去重存在竞态条件 — permission='default' 时异常被加入 Set 但永不通知",
+      "description": "代码顺序：先 _notifiedExceptionKeys.add()，再检查 Notification.permission。\n当 permission 为 'default' 时，异常被加入 Set（标记为已通知），然后调用 requestPermission()。若用户在浏览器提示中授予权限，之前加入 Set 的异常不会再触发 new Notification()，导致漏通知。\n正确的顺序应该是：先检查 permission，只有 'granted' 才发通知并加入 Set。",
+      "fix": "调整 if-else 顺序：先判断 permission === 'granted'，在 granted 分支内做 add + Notification。若 permission !== 'granted' 不加入 Set，只在 'default' 时请求权限。"
+    },
+    {
+      "severity": "P0",
+      "category": "内存泄漏",
+      "location": "updateSidebarExceptions()，第 2968 行",
+      "title": "_notifiedExceptionKeys Set 永不清理，内存持续增长",
+      "description": "当异常被确认（acknowledge）后从 /api/exceptions 消失时，其 exceptionId 永久留在 _notifiedExceptionKeys 中。若该 exceptionId 将来被复用（新异常复用旧 ID），会错误地跳过通知。",
+      "fix": "每次 fetch 完成后，用当前 API 返回的 exceptionId 列表重建 Set：\n_notifiedExceptionKeys = new Set(exceptions.map(e => e.exceptionId));\n或在 badge 初始化时，仅对本次 fetch 的 newCritical 做 add。"
+    },
+    {
+      "severity": "P1",
+      "category": "代码质量",
+      "location": "JS 顶部状态声明区，第 1012–1017 行",
+      "title": "3 个状态变量声明后从未使用",
+      "description": "_exceptionPollTimer、_sidebarSseConnected、_exceptionRefreshScheduled 均被声明但无任何读写操作。其中 _exceptionPollTimer 应在 setInterval 调用时被赋值以支持后续清理。",
+      "fix": "删除这 3 个 dead 变量；如需 timer 清理能力，用 _exceptionPollTimer = setInterval(...) 并在页面 unload 时 clearInterval。"
+    },
+    {
+      "severity": "P1",
+      "category": "功能正确性",
+      "location": "updateSidebarExceptions()，第 2948–2955 行",
+      "title": "_lastExceptionSnapshot 声明后完全未使用，badge 会计数已确认异常",
+      "description": "_lastExceptionSnapshot（declared at line 1013）从未被比较或写入。当前 badge = total count of ALL exceptions，包括 actionStatus='acknowledged' 和 'snoozed' 的已处理异常，不符合「待处理异常 badge」的语义。",
+      "fix": "在 updateSidebarExceptions() 中过滤掉已确认的异常：\nconst pending = exceptions.filter(e => e.actionStatus === 'pending' || !e.actionStatus);\n用 pending.length 作为 total；或与 _lastExceptionSnapshot 做差量比较，仅对新增 pending 异常发通知。"
+    },
+    {
+      "severity": "P1",
+      "category": "用户体验",
+      "location": "setInterval(updateSidebarBadges, 30_000)，第 3002 行",
+      "title": "无 input 聚焦检测，打字时可能感知到 badge 刷新",
+      "description": "30s 轮询未检测用户是否在 input/textarea 中打字。虽然 30s 间隔较长，实际干扰概率低，但更严谨的做法是使用 Page Visibility API 或 activeElement 检测，在用户聚焦输入框时暂停轮询。",
+      "fix": "可选优化：使用 document.visibilityState === 'visible' && !document.querySelector('input:focus,textarea:focus') 作为轮询前置条件，或直接用 Page Visibility API 暂停 setInterval。"
+    },
+    {
+      "severity": "P2",
+      "category": "代码质量",
+      "location": "第 3004 行",
+      "title": "setTimeout 2000ms 为 magic number，无命名常量",
+      "description": "setTimeout(updateSidebarBadges, 2000) 中的 2000 应抽取为命名常量 INIT_DELAY_MS，提高可读性。",
+      "fix": "const INIT_DELAY_MS = 2000; setTimeout(updateSidebarBadges, INIT_DELAY_MS);"
+    },
+    {
+      "severity": "P2",
+      "category": "健壮性",
+      "location": "第 3009 行 setInterval",
+      "title": "SSE dot 同步 setInterval 无清理逻辑",
+      "description": "页面卸载时 setInterval 不会被清除，长时间驻留会积累多个 interval 实例（在极少数重新初始化场景下）。",
+      "fix": "使用 clearInterval 在页面 unload 或 panel 切换时清理；或用 Page Visibility API 暂停/恢复。"
+    }
+  ],
+  "security": {
+    "xss": "PASS - 所有 exceptionId、message、type、source 均通过 badge.textContent（天然转译）和 escHtml()（显式转译）输出，无 XSS 风险",
+    "notificationAbuse": "PASS - 通知使用 exceptionId 作为 tag，每次 new Notification 传入独立 tag，浏览器自动去重；_notifiedExceptionKeys 二次保护",
+    "fetchInjection": "PASS - 无用户输入拼接到 URL，所有 fetch 路径均为固定端点"
+  },
+  "correctness": {
+    "badgeUpdateLogic": "PARTIAL - badge 渲染逻辑正确，但会计数已确认异常（见 P1 _lastExceptionSnapshot）",
+    "notificationDeduplication": "FAIL - 存在竞态条件导致漏通知（见 P0）",
+    "permissionThreeState": "PASS - granted/denied/default 三态均有处理，逻辑方向正确但顺序有 bug（见 P0）",
+    "noTypingInterference": "PASS - 30s 间隔足够长，实际不会干扰打字体验"
+  },
+  "acceptance": "部分满足 - badge 渲染和 SSE dot 同步正常；通知功能存在竞态 bug 必须修复才能验收"
+}

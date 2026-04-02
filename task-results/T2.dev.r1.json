@@ -1,0 +1,9 @@
+{
+  "taskId": "T2",
+  "status": "dev_done",
+  "round": 1,
+  "commit": "738dc46",
+  "summary": "Sidebar 异常/审批 tab 加红色数字 badge，badge 每 30s 轮询更新，critical/high 异常触发浏览器通知，SSE 连接状态 dot 同步",
+  "changedFiles": ["public/index.html"],
+  "completedAt": "2026-04-02"
+}

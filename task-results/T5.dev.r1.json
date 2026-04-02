@@ -2,7 +2,7 @@
   "taskId": "T5",
   "status": "dev_done",
   "round": 1,
-  "commit": "bd983cc",
+  "commit": "0d772d4",
   "summary": "Overview 面板 metric 卡片新增 300ms 数值变化动画：数字变化时触发淡入位移与颜色 flash，纯数字/比例值使用短时插值过渡，无持续 requestAnimationFrame",
   "changedFiles": ["public/index.html"],
   "completedAt": "2026-04-02"

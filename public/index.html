@@ -1030,8 +1030,6 @@
 
   // ── Panel Content Templates ──────────────────────────────────
 
-  let _exceptionPollTimer = null;
-  const _notifiedExceptionKeys = new Set();
   let _notificationPermissionRequested = false;
 
   const tabOrder = ['overview', 'agents', 'tasks', 'projects', 'exceptions', 'documents', 'memory', 'settings', 'approvals', 'timeline', 'sessions', 'usage', 'hall'];
@@ -3137,9 +3135,10 @@
     fetch('/api/exceptions')
       .then(r => r.ok ? r.json() : [])
       .then(exceptions => {
-        const total = Array.isArray(exceptions) ? exceptions.length : 0;
+        const pendingExceptions = (Array.isArray(exceptions) ? exceptions : []).filter(e => e.actionStatus === 'pending');
+        const total = pendingExceptions.length;
         const counts = { critical: 0, high: 0, medium: 0, low: 0 };
-        exceptions.forEach(e => { if (counts[e.severity] !== undefined) counts[e.severity]++; });
+        pendingExceptions.forEach(e => { if (counts[e.severity] !== undefined) counts[e.severity]++; });
 
         const badge = document.getElementById('sidebar-exceptions-badge');
         if (badge) {
@@ -3147,12 +3146,8 @@
           badge.classList.toggle('visible', total > 0);
         }
 
-        // Rebuild notified set with current API IDs to prevent memory leak
-        _notifiedExceptionKeys.clear();
-        exceptions.forEach(e => { if (e.actionStatus !== 'pending') return; if (e.severity === 'critical' || e.severity === 'high') _notifiedExceptionKeys.add(e.exceptionId); });
-
-        // Browser notification for new critical/high (only notify for pending exceptions)
-        const pendingExceptions = exceptions.filter(e => e.actionStatus === 'pending');
+        // Browser notification for new critical/high (only pending exceptions)
+        const pendingExceptions = (Array.isArray(exceptions) ? exceptions : []).filter(e => e.actionStatus === 'pending');
         const newCritical = pendingExceptions.filter(e =>
           (e.severity === 'critical' || e.severity === 'high') &&
           !_notifiedExceptionKeys.has(e.exceptionId)
@@ -3170,6 +3165,12 @@
             _notificationPermissionRequested = true;
             Notification.requestPermission();
           }
+        }
+
+        // Prune stale IDs no longer in API to prevent memory leak
+        const currentIds = new Set(pendingExceptions.map(e => e.exceptionId));
+        for (const id of _notifiedExceptionKeys) {
+          if (!currentIds.has(id)) _notifiedExceptionKeys.delete(id);
         }
       }).catch(() => {});
   }
@@ -3192,8 +3193,19 @@
     updateSidebarApprovals();
   }
 
-  // Update badges every 30 seconds
-  setInterval(updateSidebarBadges, 30_000);
+  // Update badges every 30 seconds (pause when page is hidden)
+  let _badgeIntervalId = null;
+  function startBadgeTimer() {
+    if (_badgeIntervalId) return;
+    _badgeIntervalId = setInterval(updateSidebarBadges, 30_000);
+  }
+  function stopBadgeTimer() {
+    if (_badgeIntervalId) { clearInterval(_badgeIntervalId); _badgeIntervalId = null; }
+  }
+  startBadgeTimer();
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopBadgeTimer(); else startBadgeTimer();
+  });
   // Initial load after 2s (wait for first snapshot)
   setTimeout(updateSidebarBadges, 2000);
 
