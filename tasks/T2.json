@@ -9,5 +9,18 @@
     "backend": ["server.js SSE 推送异常/审批变更事件"]
   },
   "acceptance": "异常数 > 0 时 badge 显示数字，critical 异常弹浏览器通知",
+  "outputSpec": {
+    "taskResultsFile": "task-results/T{taskId}.dev.r{round}.json",
+    "schema": {
+      "taskId": "T2",
+      "status": "done | error",
+      "round": 1,
+      "commit": "git commit hash",
+      "changedFiles": [],
+      "summary": "一句话描述做了什么"
+    },
+    "commitFormat": "T2: 简短描述",
+    "announceEvent": "forge 完成 T2"
+  },
   "createdAt": "2026-04-02"
 }

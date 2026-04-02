@@ -9,5 +9,18 @@
     "backend": ["poll.js prevSnapshot 存储", "server.js /api/overview/snapshot 返回 delta"]
   },
   "acceptance": "metric 卡片刷新后若值变化，显示绿色↑或红色↓箭头，hover 显示旧值",
+  "outputSpec": {
+    "taskResultsFile": "task-results/T{taskId}.dev.r{round}.json",
+    "schema": {
+      "taskId": "T1",
+      "status": "done | error",
+      "round": 1,
+      "commit": "git commit hash",
+      "changedFiles": [],
+      "summary": "一句话描述做了什么"
+    },
+    "commitFormat": "T1: 简短描述",
+    "announceEvent": "forge 完成 T1"
+  },
   "createdAt": "2026-04-02"
 }

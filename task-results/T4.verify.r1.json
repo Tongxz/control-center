@@ -1,0 +1,29 @@
+{
+  "taskId": "T4",
+  "round": 1,
+  "result": "passed",
+  "p1": {
+    "severity": "P1",
+    "type": "re-entry guard / race condition",
+    "description": "showNewTaskModal() and showNewProjectModal() had no re-entry guard — rapid 'n' key presses could stack multiple modal overlays",
+    "fixed": true,
+    "evidence": [
+      {
+        "function": "showNewProjectModal",
+        "location": "line 2042",
+        "guardFound": true,
+        "guardLine": "if (document.querySelector('.modal-overlay')) return;",
+        "guardPosition": "line 2043, immediately at function start"
+      },
+      {
+        "function": "showNewTaskModal",
+        "location": "line 2097",
+        "guardFound": true,
+        "guardLine": "if (document.querySelector('.modal-overlay')) return;",
+        "guardPosition": "line 2098, immediately at function start"
+      }
+    ],
+    "guardCorrect": true,
+    "guardLogic": "document.querySelector('.modal-overlay') returns the existing overlay element if one is present; truthy check causes early return, preventing duplicate modal creation. Matches the fix described by forge."
+  }
+}

@@ -6,5 +6,18 @@
   "description": "文档 panel 和记忆 panel 的 textarea 移除 readonly，加保存按钮，接通 PUT API",
   "scope": ["index.html docs panel", "index.html memory panel"],
   "acceptance": "Documents panel：选中文档可编辑，点保存调用 PUT /api/docs/:id；Memory panel 同理调用 PUT /api/memory/:agentId",
+  "outputSpec": {
+    "taskResultsFile": "task-results/T{taskId}.dev.r{round}.json",
+    "schema": {
+      "taskId": "T{n}",
+      "status": "done | error",
+      "round": 1,
+      "commit": "git commit hash",
+      "changedFiles": [],
+      "summary": "一句话描述做了什么"
+    },
+    "commitFormat": "T{n}: 简短描述",
+    "announceEvent": "forge 完成 T{n}"
+  },
   "createdAt": "2026-04-02"
 }

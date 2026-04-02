@@ -1,0 +1,29 @@
+{
+  "taskId": "T4",
+  "round": "review.r1",
+  "result": "failed",
+  "summary": "快捷键核心逻辑（1-9 切 tab、r 刷新）实现正确，input 焦点过滤也到位。但 'n' 快捷键存在重复弹窗 bug：showNewTaskModal / showNewProjectModal 每次调用都 createElement 新 overlay，rapid 'n'  presses 会叠加多个弹窗。dev result 声称'不重复创建弹窗'与实现不符。",
+  "findings": [
+    {
+      "severity": "P1",
+      "type": "functional-bug",
+      "location": "public/index.html lines 2042 (showNewProjectModal) / 2096 (showNewTaskModal)",
+      "issue": "showNewProjectModal() 和 showNewTaskModal() 内部每次都 document.createElement('div') 创建新 overlay，函数自身无任何防重入保护。连续快速按 'n' 会在页面上叠加多个弹窗。",
+      "suggestion": "在函数入口处加 guard，例如：\n  if (document.querySelector('.modal-overlay')) return;\n或使用全局状态标记 isModalOpen = true / false，在 close 时重置。"
+    },
+    {
+      "severity": "P1",
+      "type": "incorrect-validation",
+      "location": "task-results/T4.dev.r1.json validation 字段",
+      "issue": "dev result 的 validation 声称 'n 快捷键通过 click 触发 #btn-new-task / #btn-new-project，不重复创建弹窗'。但 btn-new-task / btn-new-project 的 onclick 直接调用 showNewTaskModal/showNewProjectModal，这两个函数无去重逻辑，与'不重复创建弹窗'的声明矛盾。",
+      "suggestion": "修正 dev result 的 validation 描述，或修改实现加上去重 guard。"
+    },
+    {
+      "severity": "P2",
+      "type": "minor",
+      "location": "public/index.html lines 3230 / 3242",
+      "issue": "'r' 和 'n' 分支均调用 event.preventDefault()，但这两个 key 在浏览器中没有默认行为（'r'不是浏览器刷新快捷键，Ctrl+R 才是）。'1-9' 调用 preventDefault 是合理的（防页面滚动），'r'/'n' 的 preventDefault 调用是冗余的。",
+      "suggestion": "可删除 'r' 和 'n' 分支的 event.preventDefault() 以保持代码整洁，或保留以防未来行为变更。"
+    }
+  ]
+}

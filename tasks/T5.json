@@ -1,10 +1,23 @@
 {
   "taskId": "T5",
   "title": "Overview 数值变化动画",
-  "status": "dev_done",
+  "status": "closed",
   "owner": "forge",
   "description": "Overview panel 的 metric 卡片数值变化时有淡入淡出或数字滚动动画",
   "scope": ["index.html overview panel"],
   "acceptance": "metric 值从 A 变成 B 时，数字有 300ms 过渡动画，不突兀",
+  "outputSpec": {
+    "taskResultsFile": "task-results/T{taskId}.dev.r{round}.json",
+    "schema": {
+      "taskId": "T5",
+      "status": "done | error",
+      "round": 1,
+      "commit": "git commit hash",
+      "changedFiles": [],
+      "summary": "一句话描述做了什么"
+    },
+    "commitFormat": "T5: 简短描述",
+    "announceEvent": "forge 完成 T5"
+  },
   "createdAt": "2026-04-02"
 }

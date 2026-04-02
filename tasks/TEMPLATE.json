@@ -1,0 +1,23 @@
+{
+  "taskId": "T{n}",
+  "title": "任务标题",
+  "status": "todo",
+  "owner": "forge | reviewer",
+  "description": "任务详细描述",
+  "scope": ["涉及的文件和模块"],
+  "acceptance": "验收标准",
+  "outputSpec": {
+    "taskResultsFile": "task-results/T{taskId}.dev.r{round}.json",
+    "schema": {
+      "taskId": "T{n}",
+      "status": "done | error",
+      "round": 1,
+      "commit": "git commit hash（成功时必填）",
+      "changedFiles": ["file1", "file2"],
+      "summary": "一句话描述做了什么"
+    },
+    "commitFormat": "T{n}: 简短中文描述",
+    "announceEvent": "forge 完成 T{n}"
+  },
+  "createdAt": "YYYY-MM-DD"
+}

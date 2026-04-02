@@ -1,10 +1,23 @@
 {
   "taskId": "T4",
   "title": "快捷键支持",
-  "status": "dev_done",
+  "status": "closed",
   "owner": "forge",
   "description": "前端加 keydown listener：1-9 切换 tab，r 刷新当前 panel，n 新建任务（Tasks/Projects）",
   "scope": ["index.html"],
   "acceptance": "按 1-9 对应 sidebar 顺序切换 tab，按 r 刷新当前 panel 内容，按 n 在 Tasks/Projects panel 打开新建弹窗",
+  "outputSpec": {
+    "taskResultsFile": "task-results/T{taskId}.dev.r{round}.json",
+    "schema": {
+      "taskId": "T4",
+      "status": "done | error",
+      "round": 1,
+      "commit": "git commit hash",
+      "changedFiles": [],
+      "summary": "一句话描述做了什么"
+    },
+    "commitFormat": "T4: 简短描述",
+    "announceEvent": "forge 完成 T4"
+  },
   "createdAt": "2026-04-02"
 }
