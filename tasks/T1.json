@@ -1,0 +1,13 @@
+{
+  "taskId": "T1",
+  "title": "Overview delta 反馈",
+  "status": "todo",
+  "owner": "forge",
+  "description": "Overview panel 每个 metric 卡片显示上次值 vs 当前值对比 + ↑↓ 箭头",
+  "scope": {
+    "frontend": ["index.html overview panel"],
+    "backend": ["poll.js prevSnapshot 存储", "server.js /api/overview/snapshot 返回 delta"]
+  },
+  "acceptance": "metric 卡片刷新后若值变化，显示绿色↑或红色↓箭头，hover 显示旧值",
+  "createdAt": "2026-04-02"
+}

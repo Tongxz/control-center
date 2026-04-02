@@ -1,0 +1,10 @@
+{
+  "taskId": "T3",
+  "title": "文档/记忆恢复保存功能",
+  "status": "todo",
+  "owner": "forge",
+  "description": "文档 panel 和记忆 panel 的 textarea 移除 readonly，加保存按钮，接通 PUT API",
+  "scope": ["index.html docs panel", "index.html memory panel"],
+  "acceptance": "Documents panel：选中文档可编辑，点保存调用 PUT /api/docs/:id；Memory panel 同理调用 PUT /api/memory/:agentId",
+  "createdAt": "2026-04-02"
+}

@@ -8,8 +8,8 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #0f0f0f;
-      color: #e0e0e0;
+      background: #f8f8f8;
+      color: #1a1a1a;
       font-family: system-ui, -apple-system, sans-serif;
       display: flex;
       height: 100vh;
@@ -20,8 +20,8 @@
     #sidebar {
       width: 200px;
       min-width: 200px;
-      background: #161616;
-      border-right: 1px solid #2a2a2a;
+      background: #ffffff;
+      border-right: 1px solid #e5e5e5;
       display: flex;
       flex-direction: column;
       padding: 16px 0;
@@ -30,10 +30,10 @@
     #sidebar .logo {
       font-size: 14px;
       font-weight: 700;
-      color: #4da6ff;
+      color: #2563eb;
       padding: 0 16px 20px;
       letter-spacing: 0.05em;
-      border-bottom: 1px solid #2a2a2a;
+      border-bottom: 1px solid #e5e5e5;
       margin-bottom: 12px;
     }
 
@@ -41,7 +41,7 @@
       display: block;
       font-size: 11px;
       font-weight: 400;
-      color: #666;
+      color: #9ca3af;
       margin-top: 2px;
     }
 
@@ -51,7 +51,7 @@
       padding: 10px 16px;
       background: none;
       border: none;
-      color: #888;
+      color: #6b7280;
       font-size: 13px;
       font-family: inherit;
       text-align: left;
@@ -61,14 +61,14 @@
     }
 
     .tab-btn:hover {
-      color: #e0e0e0;
-      background: #1e1e1e;
+      color: #1a1a1a;
+      background: #f8f8f8;
     }
 
     .tab-btn.active {
-      color: #4da6ff;
-      background: #1a1a2e;
-      border-left-color: #4da6ff;
+      color: #2563eb;
+      background: #2563eb10;
+      border-left-color: #2563eb;
     }
 
     /* ── Content ── */
@@ -81,14 +81,14 @@
     #content h1 {
       font-size: 20px;
       font-weight: 600;
-      color: #fff;
+      color: #1a1a1a;
       margin-bottom: 24px;
     }
 
     #content h2 {
       font-size: 14px;
       font-weight: 600;
-      color: #888;
+      color: #6b7280;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       margin: 24px 0 12px;
@@ -103,32 +103,33 @@
       font-size: 11px;
       font-weight: 600;
     }
-    .badge-green { background: #0d3a1e; color: #3ddc84; }
-    .badge-yellow { background: #3a2e0d; color: #f0c040; }
-    .badge-red { background: #3a0d0d; color: #f04040; }
-    .badge-blue { background: #0d1e3a; color: #4da6ff; }
-    .badge-gray { background: #1e1e1e; color: #888; }
-    .badge-done { background: #1e1e1e; color: #888; }
+    .badge-green { background: #dcfce7; color: #16a34a; }
+    .badge-yellow { background: #fef3c7; color: #d97706; }
+    .badge-red { background: #fee2e2; color: #dc2626; }
+    .badge-blue { background: #dbeafe; color: #2563eb; }
+    .badge-gray { background: #f3f4f6; color: #6b7280; }
+    .badge-done { background: #f3f4f6; color: #6b7280; }
 
     /* ── Cards ── */
     .card {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 8px;
       padding: 16px;
       margin-bottom: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
 
     .card-title {
       font-size: 12px;
-      color: #666;
+      color: #9ca3af;
       margin-bottom: 6px;
     }
 
     .card-value {
       font-size: 28px;
       font-weight: 700;
-      color: #fff;
+      color: #1a1a1a;
     }
 
     .card-grid {
@@ -139,21 +140,22 @@
     }
 
     .metric {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 8px;
       padding: 16px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
 
     .metric .value {
       font-size: 28px;
       font-weight: 700;
-      color: #fff;
+      color: #1a1a1a;
     }
 
     .metric .label {
       font-size: 11px;
-      color: #666;
+      color: #9ca3af;
       margin-top: 4px;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -168,8 +170,8 @@
 
     /* ── List items ── */
     .list-item {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
       padding: 12px 16px;
       margin-bottom: 8px;
@@ -180,18 +182,18 @@
 
     .list-item .name {
       font-size: 13px;
-      color: #e0e0e0;
+      color: #1a1a1a;
     }
 
     .list-item .sub {
       font-size: 11px;
-      color: #666;
+      color: #9ca3af;
       margin-top: 2px;
     }
 
     .agent-card {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
       padding: 14px 16px;
       margin-bottom: 8px;
@@ -203,44 +205,44 @@
     .agent-card .name {
       font-size: 13px;
       font-weight: 600;
-      color: #e0e0e0;
+      color: #1a1a1a;
       flex: 1;
     }
 
     .agent-card .model {
       font-size: 11px;
-      color: #666;
+      color: #9ca3af;
     }
 
     .agent-card .sessions {
       font-size: 11px;
-      color: #555;
+      color: #9ca3af;
     }
 
     .doc-item {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
       padding: 10px 16px;
       margin-bottom: 6px;
       font-size: 13px;
-      color: #e0e0e0;
+      color: #1a1a1a;
     }
 
     .empty {
-      color: #555;
+      color: #9ca3af;
       font-size: 13px;
       padding: 16px 0;
     }
 
     .loading {
-      color: #555;
+      color: #9ca3af;
       font-size: 13px;
       padding: 16px 0;
     }
 
     .error-msg {
-      color: #f04040;
+      color: #dc2626;
       font-size: 13px;
       padding: 16px 0;
     }
@@ -254,14 +256,14 @@
     /* ── Divider ── */
     hr {
       border: none;
-      border-top: 1px solid #252525;
+      border-top: 1px solid #e5e5e5;
       margin: 20px 0;
     }
 
     /* 设置 specific */
     .settings-row {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
       padding: 14px 16px;
       margin-bottom: 8px;
@@ -273,12 +275,12 @@
 
     .settings-row .label {
       font-size: 13px;
-      color: #e0e0e0;
+      color: #1a1a1a;
     }
 
     .settings-row .desc {
       font-size: 11px;
-      color: #666;
+      color: #9ca3af;
       margin-top: 2px;
     }
 
@@ -290,8 +292,8 @@
     }
 
     .exception-pill {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 8px;
       padding: 12px 16px;
       text-align: center;
@@ -304,16 +306,16 @@
 
     .exception-pill .label {
       font-size: 10px;
-      color: #666;
+      color: #9ca3af;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin-top: 2px;
     }
 
-    .exception-pill.critical .count { color: #f04040; }
-    .exception-pill.high .count { color: #f08040; }
-    .exception-pill.medium .count { color: #f0c040; }
-    .exception-pill.low .count { color: #4da6ff; }
+    .exception-pill.critical .count { color: #dc2626; }
+    .exception-pill.high .count { color: #ea580c; }
+    .exception-pill.medium .count { color: #ca8a04; }
+    .exception-pill.low .count { color: #2563eb; }
 
     /* ── 项目 ── */
     .projects-toolbar {
@@ -323,16 +325,16 @@
       margin-bottom: 20px;
     }
     .project-card {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 8px;
       padding: 14px 16px;
       margin-bottom: 10px;
       cursor: pointer;
       transition: border-color 0.15s;
     }
-    .project-card:hover { border-color: #4da6ff; }
-    .project-card.expanded { border-color: #4da6ff; background: #1a1a2e; }
+    .project-card:hover { border-color: #2563eb; }
+    .project-card.expanded { border-color: #2563eb; background: #eff6ff; }
     .project-card-header {
       display: flex;
       align-items: center;
@@ -342,36 +344,36 @@
     .project-card-name {
       font-size: 14px;
       font-weight: 600;
-      color: #e0e0e0;
+      color: #1a1a1a;
       flex: 1;
     }
     .project-card-meta {
       font-size: 11px;
-      color: #666;
+      color: #9ca3af;
       margin-top: 4px;
     }
     .project-summary {
       margin-top: 12px;
       padding-top: 12px;
-      border-top: 1px solid #252525;
+      border-top: 1px solid #e5e5e5;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
     }
     .project-summary-metric {
       text-align: center;
-      background: #111;
+      background: #f8f8f8;
       border-radius: 6px;
       padding: 8px;
     }
     .project-summary-metric .value {
       font-size: 20px;
       font-weight: 700;
-      color: #fff;
+      color: #1a1a1a;
     }
     .project-summary-metric .label {
       font-size: 10px;
-      color: #666;
+      color: #9ca3af;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin-top: 2px;
@@ -387,37 +389,37 @@
       transition: background 0.15s;
     }
     .btn-primary {
-      background: #1a3a6e;
-      color: #4da6ff;
-      border-color: #4da6ff;
+      background: #dbeafe;
+      color: #2563eb;
+      border-color: #2563eb;
     }
-    .btn-primary:hover { background: #1a4a8a; }
+    .btn-primary:hover { background: #bfdbfe; }
     .btn-ghost {
       background: transparent;
-      color: #888;
-      border-color: #2a2a2a;
+      color: #6b7280;
+      border-color: #e5e5e5;
     }
-    .btn-ghost:hover { background: #1e1e1e; color: #e0e0e0; }
+    .btn-ghost:hover { background: #f8f8f8; color: #1a1a1a; }
     .btn-danger {
-      background: #3a0d0d;
-      color: #f04040;
-      border-color: #f04040;
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #dc2626;
     }
-    .btn-danger:hover { background: #4a1515; }
+    .btn-danger:hover { background: #fecaca; }
 
     /* ── Modal ── */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.4);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 100;
     }
     .modal {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
+      background: #f8f8f8;
+      border: 1px solid #e5e5e5;
       border-radius: 10px;
       padding: 24px;
       width: 420px;
@@ -426,7 +428,7 @@
     .modal h2 {
       font-size: 16px;
       font-weight: 600;
-      color: #fff;
+      color: #1a1a1a;
       margin-bottom: 20px;
     }
     .modal-field {
@@ -435,7 +437,7 @@
     .modal-field label {
       display: block;
       font-size: 12px;
-      color: #888;
+      color: #6b7280;
       margin-bottom: 4px;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -443,10 +445,10 @@
     .modal-field input,
     .modal-field textarea {
       width: 100%;
-      background: #111;
-      border: 1px solid #2a2a2a;
+      background: #f8f8f8;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
-      color: #e0e0e0;
+      color: #1a1a1a;
       font-family: inherit;
       font-size: 13px;
       padding: 8px 12px;
@@ -455,7 +457,7 @@
     .modal-field input:focus,
     .modal-field textarea:focus {
       outline: none;
-      border-color: #4da6ff;
+      border-color: #2563eb;
     }
     .modal-actions {
       display: flex;
@@ -466,39 +468,39 @@
 
     /* ── 任务 ── */
     .task-item {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
       padding: 12px 16px;
       margin-bottom: 8px;
     }
     .task-item .task-title {
       font-size: 13px;
-      color: #e0e0e0;
+      color: #1a1a1a;
       font-weight: 600;
     }
     .task-item .task-meta {
       font-size: 11px;
-      color: #666;
+      color: #9ca3af;
       margin-top: 4px;
     }
 
     /* ── 异常中心 ── */
     .exc-item {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
       padding: 12px 16px;
       margin-bottom: 8px;
     }
     .exc-item .exc-type {
       font-size: 13px;
-      color: #e0e0e0;
+      color: #1a1a1a;
       font-weight: 600;
     }
     .exc-item .exc-msg {
       font-size: 12px;
-      color: #888;
+      color: #6b7280;
       margin-top: 4px;
     }
 
@@ -513,23 +515,23 @@
       overflow-y: auto;
     }
     .doc-entry {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
       padding: 10px 14px;
       margin-bottom: 6px;
       cursor: pointer;
       transition: border-color 0.15s;
     }
-    .doc-entry:hover { border-color: #4da6ff; }
-    .doc-entry.active { border-color: #4da6ff; background: #1a1a2e; }
+    .doc-entry:hover { border-color: #2563eb; }
+    .doc-entry.active { border-color: #2563eb; background: #eff6ff; }
     .doc-entry .doc-name {
       font-size: 13px;
-      color: #e0e0e0;
+      color: #1a1a1a;
     }
     .doc-entry .doc-meta {
       font-size: 11px;
-      color: #666;
+      color: #9ca3af;
       margin-top: 2px;
     }
     .docs-preview {
@@ -544,14 +546,14 @@
     }
     .docs-preview-title {
       font-size: 13px;
-      color: #888;
+      color: #6b7280;
     }
     .doc-textarea {
       flex: 1;
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
-      color: #e0e0e0;
+      color: #1a1a1a;
       font-family: monospace;
       font-size: 12px;
       padding: 14px;
@@ -576,19 +578,19 @@
       overflow-y: auto;
     }
     .mem-entry {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
       padding: 10px 14px;
       margin-bottom: 6px;
       cursor: pointer;
       transition: border-color 0.15s;
     }
-    .mem-entry:hover { border-color: #4da6ff; }
-    .mem-entry.active { border-color: #4da6ff; background: #1a1a2e; }
+    .mem-entry:hover { border-color: #2563eb; }
+    .mem-entry.active { border-color: #2563eb; background: #eff6ff; }
     .mem-entry .mem-agent {
       font-size: 13px;
-      color: #e0e0e0;
+      color: #1a1a1a;
     }
     .mem-entry .mem-status {
       font-size: 11px;
@@ -600,15 +602,15 @@
     }
     .memory-preview-label {
       font-size: 13px;
-      color: #888;
+      color: #6b7280;
       margin-bottom: 10px;
     }
     .memory-textarea {
       flex: 1;
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
-      color: #e0e0e0;
+      color: #1a1a1a;
       font-family: monospace;
       font-size: 12px;
       padding: 14px;
@@ -616,7 +618,7 @@
       min-height: 200px;
     }
     .memory-empty {
-      color: #555;
+      color: #9ca3af;
       font-size: 13px;
       padding: 32px 0;
       text-align: center;
@@ -629,24 +631,24 @@
     }
     .approval-tab-btn {
       padding: 6px 16px;
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
-      color: #888;
+      color: #6b7280;
       font-size: 13px;
       font-family: inherit;
       cursor: pointer;
       transition: all 0.15s;
     }
-    .approval-tab-btn:hover { color: #e0e0e0; border-color: #4da6ff; }
+    .approval-tab-btn:hover { color: #1a1a1a; border-color: #2563eb; }
     .approval-tab-btn.active {
-      background: #1a3a6e;
-      border-color: #4da6ff;
-      color: #4da6ff;
+      background: #dbeafe;
+      border-color: #2563eb;
+      color: #2563eb;
     }
     .approval-tab-btn .count {
       display: inline-block;
-      background: #f04040;
+      background: #dc2626;
       color: #fff;
       border-radius: 10px;
       padding: 0 6px;
@@ -654,19 +656,19 @@
       font-weight: 600;
       margin-left: 6px;
     }
-    .approval-tab-btn.active .count { background: #fff; color: #1a3a6e; }
+    .approval-tab-btn.active .count { background: #dc2626; color: #fff; }
 
     .approval-item {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
       padding: 12px 16px;
       margin-bottom: 8px;
       cursor: pointer;
       transition: border-color 0.15s;
     }
-    .approval-item:hover { border-color: #4da6ff; }
-    .approval-item.expanded { border-color: #4da6ff; background: #1a1a2e; }
+    .approval-item:hover { border-color: #2563eb; }
+    .approval-item.expanded { border-color: #2563eb; background: #eff6ff; }
 
     .approval-item-header {
       display: flex;
@@ -675,33 +677,33 @@
     }
     .approval-item-title {
       font-size: 13px;
-      color: #e0e0e0;
+      color: #1a1a1a;
       font-weight: 600;
       flex: 1;
     }
     .approval-item-meta {
       font-size: 11px;
-      color: #666;
+      color: #9ca3af;
       margin-top: 4px;
     }
     .approval-detail {
       margin-top: 12px;
       padding-top: 12px;
-      border-top: 1px solid #252525;
+      border-top: 1px solid #e5e5e5;
     }
     .approval-detail-field {
       margin-bottom: 10px;
     }
     .approval-detail-label {
       font-size: 11px;
-      color: #666;
+      color: #9ca3af;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin-bottom: 4px;
     }
     .approval-detail-value {
       font-size: 13px;
-      color: #e0e0e0;
+      color: #1a1a1a;
     }
     .approval-actions {
       display: flex;
@@ -713,33 +715,33 @@
     }
     .approval-comment-input {
       width: 100%;
-      background: #111;
-      border: 1px solid #2a2a2a;
+      background: #f8f8f8;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
-      color: #e0e0e0;
+      color: #1a1a1a;
       font-family: inherit;
       font-size: 13px;
       padding: 8px 12px;
       resize: vertical;
       min-height: 60px;
     }
-    .approval-comment-input:focus { outline: none; border-color: #4da6ff; }
+    .approval-comment-input:focus { outline: none; border-color: #2563eb; }
     .btn-approve {
-      background: #0d3a1e;
-      color: #3ddc84;
-      border-color: #3ddc84;
+      background: #dcfce7;
+      color: #16a34a;
+      border-color: #16a34a;
     }
-    .btn-approve:hover { background: #145a2e; }
+    .btn-approve:hover { background: #bbf7d0; }
     .btn-reject {
-      background: #3a0d0d;
-      color: #f04040;
-      border-color: #f04040;
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #dc2626;
     }
-    .btn-reject:hover { background: #4a1515; }
+    .btn-reject:hover { background: #fecaca; }
 
     .history-item {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
       padding: 12px 16px;
       margin-bottom: 8px;
@@ -752,26 +754,26 @@
     }
     .history-item-title {
       font-size: 13px;
-      color: #e0e0e0;
+      color: #1a1a1a;
       font-weight: 600;
       flex: 1;
     }
     .history-item-meta {
       font-size: 11px;
-      color: #666;
+      color: #9ca3af;
     }
 
     /* riskLevel badge colors */
-    .badge-critical { background: #3a0d0d; color: #f04040; }
-    .badge-high { background: #3a2a0d; color: #f08040; }
-    .badge-medium { background: #3a2e0d; color: #f0c040; }
-    .badge-low { background: #0d3a1e; color: #3ddc84; }
-    .badge-purple { background: #2a0d3a; color: #c080f0; }
+    .badge-critical { background: #fee2e2; color: #dc2626; }
+    .badge-high { background: #fef3c7; color: #ea580c; }
+    .badge-medium { background: #fefce8; color: #ca8a04; }
+    .badge-low { background: #dcfce7; color: #16a34a; }
+    .badge-purple { background: #f3e8ff; color: #9333ea; }
 
     /* ── Timeline ── */
     .timeline-item {
-      background: #181818;
-      border: 1px solid #252525;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
       border-radius: 6px;
       padding: 12px 16px;
       margin-bottom: 8px;
@@ -784,32 +786,32 @@
     }
     .timeline-agent {
       font-size: 12px;
-      color: #888;
+      color: #6b7280;
       font-weight: 600;
     }
     .timeline-ts {
       font-size: 11px;
-      color: #555;
+      color: #9ca3af;
       margin-left: auto;
     }
     .timeline-summary {
       font-size: 13px;
-      color: #e0e0e0;
+      color: #1a1a1a;
       margin-bottom: 4px;
     }
     .timeline-target {
       font-size: 11px;
-      color: #555;
+      color: #9ca3af;
     }
     .timeline-diff {
       margin-top: 6px;
       font-size: 11px;
-      color: #555;
+      color: #9ca3af;
       font-family: monospace;
       word-break: break-all;
     }
     .tl-label {
-      color: #888;
+      color: #6b7280;
       margin-right: 4px;
     }
 
@@ -817,7 +819,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      color: #3ddc84;
+      color: #16a34a;
       font-size: 13px;
       padding: 16px 0;
     }
@@ -835,11 +837,11 @@
     .sessions-fleet {
       width: 320px;
       flex-shrink: 0;
-      border-right: 1px solid #2a2a2a;
+      border-right: 1px solid #e5e5e5;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: #111;
+      background: #f8f8f8;
     }
     .sessions-inspector {
       flex: 1;
@@ -849,72 +851,72 @@
     }
     .sf-header {
       padding: 10px 12px;
-      border-bottom: 1px solid #2a2a2a;
+      border-bottom: 1px solid #e5e5e5;
       display: flex;
       align-items: center;
       gap: 8px;
-      background: #141414;
+      background: #f8f8f8;
       flex-shrink: 0;
     }
-    .sf-title { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; flex: 1; }
-    .sse-dot { width: 7px; height: 7px; border-radius: 50%; background: #444; flex-shrink: 0; }
-    .sse-dot.connected { background: #4caf50; }
+    .sf-title { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; flex: 1; }
+    .sse-dot { width: 7px; height: 7px; border-radius: 50%; background: #d1d5db; flex-shrink: 0; }
+    .sse-dot.connected { background: #16a34a; }
     .sf-filter-bar {
       display: flex; gap: 4px; padding: 8px 10px;
-      border-bottom: 1px solid #1e1e1e; flex-shrink: 0;
+      border-bottom: 1px solid #e5e5e5; flex-shrink: 0;
     }
     .sf-filter {
-      padding: 2px 8px; border: 1px solid #2a2a2a; border-radius: 3px;
-      background: none; color: #666; font-size: 11px; cursor: pointer; font-family: inherit;
+      padding: 2px 8px; border: 1px solid #e5e5e5; border-radius: 3px;
+      background: none; color: #9ca3af; font-size: 11px; cursor: pointer; font-family: inherit;
     }
-    .sf-filter.active { background: #1e2c3d; border-color: #4da6ff; color: #4da6ff; }
+    .sf-filter.active { background: #dbeafe; border-color: #2563eb; color: #2563eb; }
     .sf-scroll { overflow-y: auto; flex: 1; }
-    .agent-group { border-bottom: 1px solid #1a1a1a; }
+    .agent-group { border-bottom: 1px solid #e5e5e5; }
     .agent-group-hdr {
-      padding: 7px 12px; background: #141414;
+      padding: 7px 12px; background: #f8f8f8;
       display: flex; align-items: center; gap: 7px;
     }
     .ag-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .ag-dot.busy { background: #4da6ff; }
-    .ag-dot.idle { background: #3a3a3a; }
-    .ag-name { font-size: 12px; font-weight: 600; color: #bbb; flex: 1; }
-    .ag-count { font-size: 11px; color: #555; }
+    .ag-dot.busy { background: #2563eb; }
+    .ag-dot.idle { background: #d1d5db; }
+    .ag-name { font-size: 12px; font-weight: 600; color: #4b5563; flex: 1; }
+    .ag-count { font-size: 11px; color: #9ca3af; }
     .sess-row {
       padding: 6px 12px 6px 26px; display: flex; align-items: center; gap: 6px;
-      cursor: pointer; border-bottom: 1px solid #181818; transition: background 0.1s;
+      cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.1s;
     }
-    .sess-row:hover { background: #1a1a1a; }
-    .sess-row.selected { background: #1b2a3d; }
+    .sess-row:hover { background: #f0f0f0; }
+    .sess-row.selected { background: #eff6ff; }
     .sess-id { font-size: 10px; color: #444; font-family: monospace; width: 70px; flex-shrink: 0; overflow: hidden; }
-    .sess-task { flex: 1; font-size: 12px; color: #aaa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sess-age { font-size: 10px; color: #555; flex-shrink: 0; }
+    .sess-task { flex: 1; font-size: 12px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sess-age { font-size: 10px; color: #9ca3af; flex-shrink: 0; }
     .sess-badge { font-size: 10px; padding: 1px 5px; border-radius: 2px; flex-shrink: 0; }
-    .badge-active { background: #162616; color: #4caf50; }
-    .badge-stalled { background: #2e2a14; color: #ffa726; }
-    .badge-error { background: #2a1414; color: #ef5350; }
+    .badge-active { background: #dcfce7; color: #16a34a; }
+    .badge-stalled { background: #fef3c7; color: #d97706; }
+    .badge-error { background: #fee2e2; color: #dc2626; }
     /* Inspector */
     .si-hdr {
-      padding: 10px 14px; border-bottom: 1px solid #2a2a2a;
-      background: #141414; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+      padding: 10px 14px; border-bottom: 1px solid #e5e5e5;
+      background: #f8f8f8; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
     }
-    .si-sid { font-family: monospace; font-size: 11px; color: #666; }
-    .si-agent { padding: 2px 7px; border-radius: 3px; font-size: 11px; font-weight: 600; background: #1e2c3d; color: #4da6ff; }
-    .si-live { padding: 2px 6px; border-radius: 3px; font-size: 10px; background: #162616; color: #4caf50; margin-left: auto; }
-    .si-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: #3a3a3a; font-size: 13px; }
+    .si-sid { font-family: monospace; font-size: 11px; color: #9ca3af; }
+    .si-agent { padding: 2px 7px; border-radius: 3px; font-size: 11px; font-weight: 600; background: #dbeafe; color: #2563eb; }
+    .si-live { padding: 2px 6px; border-radius: 3px; font-size: 10px; background: #dcfce7; color: #16a34a; margin-left: auto; }
+    .si-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 13px; }
     .si-scroll { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
     .ev-msg { padding: 7px 9px; border-radius: 4px; }
-    .ev-msg.user { background: #1c1c1c; border-left: 2px solid #444; }
-    .ev-msg.assistant { background: #151e2d; border-left: 2px solid #4da6ff; }
-    .ev-role { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #555; margin-bottom: 3px; }
-    .ev-msg.assistant .ev-role { color: #4da6ff; }
-    .ev-text { font-size: 12px; color: #ccc; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
-    .ev-tool { padding: 5px 9px; font-size: 12px; color: #888; display: flex; align-items: center; gap: 6px; }
-    .ev-tool-name { font-family: monospace; color: #9b8fe8; font-weight: 600; }
-    .ev-tool-target { color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-    .ev-tool-ok { color: #4caf50; flex-shrink: 0; }
-    .ev-tool-err { color: #ef5350; flex-shrink: 0; }
-    .ev-ts { font-size: 10px; color: #3a3a3a; margin-bottom: 2px; }
-    .si-stalled { padding: 7px 10px; background: #2a2514; border: 1px solid #4a4020; border-radius: 3px; font-size: 11px; color: #ffa726; }
+    .ev-msg.user { background: #f8f8f8; border-left: 2px solid #d1d5db; }
+    .ev-msg.assistant { background: #eff6ff; border-left: 2px solid #2563eb; }
+    .ev-role { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #9ca3af; margin-bottom: 3px; }
+    .ev-msg.assistant .ev-role { color: #2563eb; }
+    .ev-text { font-size: 12px; color: #374151; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+    .ev-tool { padding: 5px 9px; font-size: 12px; color: #6b7280; display: flex; align-items: center; gap: 6px; }
+    .ev-tool-name { font-family: monospace; color: #7c3aed; font-weight: 600; }
+    .ev-tool-target { color: #9ca3af; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .ev-tool-ok { color: #16a34a; flex-shrink: 0; }
+    .ev-tool-err { color: #dc2626; flex-shrink: 0; }
+    .ev-ts { font-size: 10px; color: #9ca3af; margin-bottom: 2px; }
+    .si-stalled { padding: 7px 10px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 3px; font-size: 11px; color: #d97706; }
   </style>
 </head>
 <body>
@@ -984,7 +986,7 @@
     projects: `
       <h1>项目</h1>
       <div id="projects-toolbar" class="projects-toolbar">
-        <span style="font-size:13px;color:#555;">点击项目查看 summary</span>
+        <span style="font-size:13px;color:#9ca3af;">点击项目查看 summary</span>
         <button class="btn btn-primary" id="btn-new-project">+ 新建项目</button>
       </div>
       <div id="projects-list">
@@ -1024,7 +1026,7 @@
     timeline: `
       <h1>Timeline</h1>
       <div id="timeline-filters" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <select id="tl-filter-agent" style="background:#181818;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;font-family:inherit;font-size:13px;padding:6px 10px;">
+        <select id="tl-filter-agent" style="background:#ffffff;border:1px solid #e5e5e5;border-radius:6px;color:#1a1a1a;font-family:inherit;font-size:13px;padding:6px 10px;">
           <option value="">全部 Agent</option>
           <option value="main">main</option>
           <option value="forge">forge</option>
@@ -1032,7 +1034,7 @@
           <option value="sentinel">sentinel</option>
           <option value="system">system</option>
         </select>
-        <select id="tl-filter-type" style="background:#181818;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;font-family:inherit;font-size:13px;padding:6px 10px;">
+        <select id="tl-filter-type" style="background:#ffffff;border:1px solid #e5e5e5;border-radius:6px;color:#1a1a1a;font-family:inherit;font-size:13px;padding:6px 10px;">
           <option value="">全部类型</option>
           <option value="task_create">task_create</option>
           <option value="task_update">task_update</option>
@@ -1044,7 +1046,7 @@
           <option value="exception_ack">exception_ack</option>
         </select>
         <button class="btn btn-ghost" id="tl-refresh" style="padding:6px 12px;">刷新</button>
-        <a href="/api/export/timeline.csv" download style="margin-left:auto;padding:6px 12px;background:#1e1e1e;border:1px solid #2a2a2a;border-radius:6px;color:#888;font-size:13px;text-decoration:none;cursor:pointer;">导出 CSV</a>
+        <a href="/api/export/timeline.csv" download style="margin-left:auto;padding:6px 12px;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:6px;color:#6b7280;font-size:13px;text-decoration:none;cursor:pointer;">导出 CSV</a>
       </div>
       <div id="timeline-body">
         <div class="loading">Loading timeline...</div>
@@ -1119,7 +1121,7 @@
             <div class="label">网关版本</div>
           </div>
           <div class="metric">
-            <div class="value" style="font-size:18px;color:#3ddc84;">${uptime ? uptime : '—'}</div>
+            <div class="value" style="font-size:18px;color:#16a34a;">${uptime ? uptime : '—'}</div>
             <div class="label">Uptime</div>
           </div>
           <div class="metric">
@@ -1147,11 +1149,11 @@
         <h2>定时任务</h2>
         <div class="metric-grid">
           <div class="metric">
-            <div class="value" style="color:#3ddc84;">${cronOk}</div>
+            <div class="value" style="color:#16a34a;">${cronOk}</div>
             <div class="label">OK</div>
           </div>
           <div class="metric">
-            <div class="value" style="color:#f04040;">${cronError}</div>
+            <div class="value" style="color:#dc2626;">${cronError}</div>
             <div class="label">Error</div>
           </div>
           <div class="metric">
@@ -1226,7 +1228,7 @@
       }).join('');
 
       panel.innerHTML = `
-        <h1>智能体 <span style="font-size:14px;color:#666;font-weight:400;">(${total})</span></h1>
+        <h1>智能体 <span style="font-size:14px;color:#9ca3af;font-weight:400;">(${total})</span></h1>
         ${agentCards}
       `;
     } catch (err) {
@@ -1278,7 +1280,7 @@
       const securityFlags = (health.system && health.system.securityFlags) || gw.securityFlags || [];
       const securityItems = securityFlags.length
         ? securityFlags.map(f => `<span class="badge badge-blue">${escHtml(f)}</span>`).join(' ')
-        : '<span style="color:#555;">None</span>';
+        : '<span style="color:#9ca3af;">None</span>';
 
       // Budget
       const budget = health.budget;
@@ -1292,18 +1294,18 @@
           : budget.status === 'warning' ? `Approaching limit (warn at ${budget.warnAtPercent}%)`
           : `Within budget (warn at ${budget.warnAtPercent}%)`;
         const barWidth = Math.min(pct, 100);
-        const barColor = budget.status === 'exceeded' ? '#f04040' : budget.status === 'warning' ? '#f0c040' : '#3ddc84';
+        const barColor = budget.status === 'exceeded' ? '#dc2626' : budget.status === 'warning' ? '#ca8a04' : '#16a34a';
         budgetHTML = `<div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <div>
-              <div class="label">Token 用量 <span style="font-size:11px;color:#666;">（本月）</span></div>
+              <div class="label">Token 用量 <span style="font-size:11px;color:#9ca3af;">（本月）</span></div>
               <div class="desc">${budget.sessionCount || 0} sessions · input ${formatTokens(budget.inputTokens)} + output ${formatTokens(budget.outputTokens)}</div>
             </div>
             <span class="badge ${statusClass}">${statusLabel}</span>
           </div>
-          <div style="background:#111;border-radius:4px;height:8px;overflow:hidden;"><div style="width:${barWidth}%;height:100%;background:${barColor};transition:width 0.3s;"></div></div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;"><span>${formatTokens(budget.totalTokens || 0)} used</span><span>${formatTokens(limit)} limit</span><span>${pct}%</span></div>
-          <div style="font-size:11px;color:${budget.status === 'exceeded' ? '#f04040' : budget.status === 'warning' ? '#f0c040' : '#555'};">${statusNote}</div>
+          <div style="background:#f8f8f8;border-radius:4px;height:8px;overflow:hidden;"><div style="width:${barWidth}%;height:100%;background:${barColor};transition:width 0.3s;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#9ca3af;"><span>${formatTokens(budget.totalTokens || 0)} used</span><span>${formatTokens(limit)} limit</span><span>${pct}%</span></div>
+          <div style="font-size:11px;color:${budget.status === 'exceeded' ? '#dc2626' : budget.status === 'warning' ? '#ca8a04' : '#9ca3af'};">${statusNote}</div>
         </div>`;
       }
 
@@ -1380,9 +1382,9 @@
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <input id="notify-webhook" type="text" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..."
-              style="flex:1;min-width:0;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;font-size:12px;padding:6px 10px;font-family:monospace;"
+              style="flex:1;min-width:0;background:#f8f8f8;border:1px solid #e5e5e5;border-radius:6px;color:#1a1a1a;font-size:12px;padding:6px 10px;font-family:monospace;"
               value="${notify?.webhookSet ? '(已配置)' : ''}" />
-            <select id="notify-level" style="background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;font-size:12px;padding:6px 8px;">
+            <select id="notify-level" style="background:#f8f8f8;border:1px solid #e5e5e5;border-radius:6px;color:#1a1a1a;font-size:12px;padding:6px 8px;">
               <option value="critical" ${notify?.level === 'critical' ? 'selected' : ''}>仅 critical</option>
               <option value="all" ${notify?.level === 'all' ? 'selected' : ''}>全部</option>
             </select>
@@ -1391,7 +1393,7 @@
             <button class="btn btn-primary" id="btn-notify-save" style="font-size:12px;padding:5px 14px;">保存</button>
             <button class="btn btn-ghost" id="btn-notify-test" style="font-size:12px;padding:5px 14px;">测试发送</button>
             <button class="btn btn-ghost" id="btn-notify-toggle" style="font-size:12px;padding:5px 14px;">${notify?.enabled ? '禁用' : '启用'}</button>
-            <span id="notify-msg" style="font-size:12px;color:#555;align-self:center;"></span>
+            <span id="notify-msg" style="font-size:12px;color:#9ca3af;align-self:center;"></span>
           </div>
         </div>
 
@@ -1406,13 +1408,13 @@
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <input id="access-token" type="password" placeholder="输入新 token（留空则清除）"
-              style="flex:1;min-width:0;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#e0e0e0;font-size:12px;padding:6px 10px;" />
+              style="flex:1;min-width:0;background:#f8f8f8;border:1px solid #e5e5e5;border-radius:6px;color:#1a1a1a;font-size:12px;padding:6px 10px;" />
           </div>
           <div style="display:flex;gap:8px;">
             <button class="btn btn-primary" id="btn-access-save" style="font-size:12px;padding:5px 14px;">设置 Token</button>
             <button class="btn btn-ghost" id="btn-access-toggle" style="font-size:12px;padding:5px 14px;">切换鉴权</button>
             <a href="/api/export/runtime" download class="btn btn-ghost" style="font-size:12px;padding:5px 14px;text-decoration:none;">导出 Runtime ZIP</a>
-            <span id="access-msg" style="font-size:12px;color:#555;align-self:center;"></span>
+            <span id="access-msg" style="font-size:12px;color:#9ca3af;align-self:center;"></span>
           </div>
         </div>
       `;
@@ -1434,9 +1436,9 @@
         const msg = document.getElementById('notify-msg');
         const r = await fetch('/api/settings/notify/test', { method: 'POST' });
         const d = await r.json();
-        msg.style.color = d.ok ? '#4caf50' : '#ef5350';
+        msg.style.color = d.ok ? '#16a34a' : '#dc2626';
         msg.textContent = d.ok ? '发送成功' : (d.error || '发送失败');
-        setTimeout(() => { msg.textContent = ''; msg.style.color = '#555'; }, 3000);
+        setTimeout(() => { msg.textContent = ''; msg.style.color = '#9ca3af'; }, 3000);
       });
       document.getElementById('btn-notify-toggle')?.addEventListener('click', async () => {
         const cur = notify?.enabled;
@@ -1482,7 +1484,7 @@
       if (!tasks.length) {
         panel.innerHTML = `
           <div class="empty" style="padding:8px 0 16px;">暂无任务</div>
-          <button class="tab-btn" disabled style="color:#555;cursor:not-allowed;">创建任务</button>
+          <button class="tab-btn" disabled style="color:#9ca3af;cursor:not-allowed;">创建任务</button>
         `;
         return;
       }
@@ -1523,8 +1525,8 @@
 
       const toolbar = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <span style="font-size:12px;color:#555;">${exceptions.length} 条待处理异常</span>
-          <label style="font-size:12px;color:#666;cursor:pointer;">
+          <span style="font-size:12px;color:#9ca3af;">${exceptions.length} 条待处理异常</span>
+          <label style="font-size:12px;color:#9ca3af;cursor:pointer;">
             <input type="checkbox" id="exc-show-acked" style="margin-right:4px;" />
             显示已确认
           </label>
@@ -1544,13 +1546,13 @@
         <div class="exc-item" data-id="${escHtml(e.exceptionId)}" style="position:relative;">
           <div class="exc-type" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
             <span class="badge ${sevClass(e.severity)}">${escHtml(e.severity)}</span>
-            <span style="color:#888;font-size:11px;">${escHtml(e.type)}</span>
-            <span style="color:#555;font-size:11px;">·</span>
-            <span style="color:#555;font-size:11px;">${escHtml(e.source)}</span>
+            <span style="color:#6b7280;font-size:11px;">${escHtml(e.type)}</span>
+            <span style="color:#9ca3af;font-size:11px;">·</span>
+            <span style="color:#9ca3af;font-size:11px;">${escHtml(e.source)}</span>
             ${e.actionStatus !== 'pending' ? `<span class="badge ${statusClass(e.actionStatus)}" style="margin-left:auto;">${e.actionStatus}</span>` : ''}
           </div>
           <div class="exc-msg">${escHtml(e.message)}</div>
-          ${e.actionRequired ? `<div style="font-size:11px;color:#555;margin-top:4px;">→ ${escHtml(e.actionRequired)}</div>` : ''}
+          ${e.actionRequired ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px;">→ ${escHtml(e.actionRequired)}</div>` : ''}
           <div style="margin-top:8px;display:flex;gap:6px;">
             <button class="btn btn-ghost exc-ack-btn" data-id="${escHtml(e.exceptionId)}" style="font-size:11px;padding:3px 10px;">确认</button>
           </div>
@@ -1578,11 +1580,11 @@
           d.innerHTML = `
             <div class="exc-type" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
               <span class="badge ${sevClass(e.severity)}">${escHtml(e.severity)}</span>
-              <span style="color:#888;font-size:11px;">${escHtml(e.type)}</span>
+              <span style="color:#6b7280;font-size:11px;">${escHtml(e.type)}</span>
               ${e.actionStatus !== 'pending' ? `<span class="badge ${statusClass(e.actionStatus)}" style="margin-left:auto;">${e.actionStatus}</span>` : ''}
             </div>
             <div class="exc-msg">${escHtml(e.message)}</div>
-            ${e.actionRequired ? `<div style="font-size:11px;color:#555;margin-top:4px;">→ ${escHtml(e.actionRequired)}</div>` : ''}
+            ${e.actionRequired ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px;">→ ${escHtml(e.actionRequired)}</div>` : ''}
             <div style="margin-top:8px;"><button class="btn btn-ghost exc-ack-btn" data-id="${escHtml(e.exceptionId)}" style="font-size:11px;padding:3px 10px;">确认</button></div>
           `;
           d.querySelector('.exc-ack-btn')?.addEventListener('click', async () => {
@@ -1645,8 +1647,12 @@
             <span class="docs-preview-title">${escHtml(selectedId)}</span>
             <span class="badge badge-blue">PUT /api/docs/:id</span>
           </div>
-          <textarea class="doc-textarea" id="doc-content" readonly placeholder="Loading..."></textarea>
-          <div class="docs-api-hint">PUT /api/docs/${escHtml(selectedId)} — read-only (save not implemented)</div>
+          <textarea class="doc-textarea" id="doc-content" placeholder="Loading..."></textarea>
+          <div class="docs-save-row" style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" id="btn-save-doc" style="font-size:12px;padding:5px 14px;">保存</button>
+            <span id="doc-save-msg" style="font-size:12px;color:#16a34a;display:none;">已保存</span>
+          </div>
+          <div class="docs-api-hint">PUT /api/docs/${escHtml(selectedId)} — 支持保存</div>
         </div>
       `;
     }
@@ -1674,10 +1680,26 @@
                 <span class="docs-preview-title">${escHtml(id)}</span>
                 <span class="badge badge-blue">PUT /api/docs/:id</span>
               </div>
-              <textarea class="doc-textarea" readonly>${escHtml(doc.content || '')}</textarea>
-              <div class="docs-api-hint">PUT /api/docs/${escHtml(id)} — read-only (save not implemented)</div>
+              <textarea class="doc-textarea" id="doc-content">${escHtml(doc.content || '')}</textarea>
+              <div class="docs-save-row" style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" id="btn-save-doc" style="font-size:12px;padding:5px 14px;">保存</button>
+                <span id="doc-save-msg" style="font-size:12px;color:#16a34a;display:none;">已保存</span>
+              </div>
+              <div class="docs-api-hint">PUT /api/docs/${escHtml(id)} — 支持保存</div>
             </div>
           `;
+          document.getElementById('btn-save-doc')?.addEventListener('click', async () => {
+            const content = document.getElementById('doc-content')?.value ?? '';
+            const msg = document.getElementById('doc-save-msg');
+            try {
+              const r = await fetch('/api/docs/' + encodeURIComponent(id), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+              });
+              if (r.ok && msg) { msg.style.display = 'inline'; setTimeout(() => msg.style.display = 'none', 2000); }
+            } catch {}
+          });
           // Update active state without full re-render
           panel.querySelectorAll('.doc-entry').forEach(e => {
             e.classList.toggle('active', e.dataset.id === id);
@@ -1764,15 +1786,15 @@
                 <div class="label">Total</div>
               </div>
               <div class="project-summary-metric">
-                <div class="value" style="color:#3ddc84;">${sum.doneCount ?? 0}</div>
+                <div class="value" style="color:#16a34a;">${sum.doneCount ?? 0}</div>
                 <div class="label">Done</div>
               </div>
               <div class="project-summary-metric">
-                <div class="value" style="color:#f0c040;">${sum.inProgressCount ?? 0}</div>
+                <div class="value" style="color:#ca8a04;">${sum.inProgressCount ?? 0}</div>
                 <div class="label">In Progress</div>
               </div>
               <div class="project-summary-metric">
-                <div class="value" style="color:#f04040;">${sum.blockedCount ?? 0}</div>
+                <div class="value" style="color:#dc2626;">${sum.blockedCount ?? 0}</div>
                 <div class="label">Blocked</div>
               </div>
             `;
@@ -1799,7 +1821,7 @@
 
   // Status label styling for done=gray
   function getProjectStatusStyle(status) {
-    if (status === 'done') return 'background:#1e1e1e;color:#888;';
+    if (status === 'done') return 'background:#f5f5f5;color:#6b7280;';
     return '';
   }
 
@@ -1835,7 +1857,7 @@
       const summary = document.getElementById('proj-summary').value.trim();
       const owner = document.getElementById('proj-owner').value.trim() || 'main';
       if (!name) {
-        document.getElementById('proj-name').style.borderColor = '#f04040';
+        document.getElementById('proj-name').style.borderColor = '#dc2626';
         return;
       }
       try {
@@ -1901,7 +1923,11 @@
       previewHTML = `
         <div class="memory-preview">
           <div class="memory-preview-label">${escHtml(selectedAgentId)} — memory</div>
-          <textarea class="memory-textarea" id="mem-content" readonly placeholder="Loading..."></textarea>
+          <textarea class="memory-textarea" id="mem-content" placeholder="Loading..."></textarea>
+          <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" id="btn-save-mem" style="font-size:12px;padding:5px 14px;">保存</button>
+            <span id="mem-save-msg" style="font-size:12px;color:#16a34a;display:none;">已保存</span>
+          </div>
         </div>
       `;
     }
@@ -1922,7 +1948,11 @@
         right.innerHTML = `
           <div class="memory-preview">
             <div class="memory-preview-label">${escHtml(agentId)} — memory</div>
-            <textarea class="memory-textarea" readonly placeholder="Loading..."></textarea>
+            <textarea class="memory-textarea" id="mem-content" placeholder="Loading..."></textarea>
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-primary" id="btn-save-mem" style="font-size:12px;padding:5px 14px;">保存</button>
+              <span id="mem-save-msg" style="font-size:12px;color:#16a34a;display:none;">已保存</span>
+            </div>
           </div>
         `;
 
@@ -1940,6 +1970,19 @@
           // Update active state without full re-render
           panel.querySelectorAll('.mem-entry').forEach(e => {
             e.classList.toggle('active', e.dataset.agent === agentId);
+          });
+          // Bind save button
+          document.getElementById('btn-save-mem')?.addEventListener('click', async () => {
+            const content = document.getElementById('mem-content')?.value ?? '';
+            const msg = document.getElementById('mem-save-msg');
+            try {
+              const r = await fetch('/api/memory/' + encodeURIComponent(agentId), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+              });
+              if (r.ok && msg) { msg.style.display = 'inline'; setTimeout(() => msg.style.display = 'none', 2000); }
+            } catch {}
           });
         } catch (err) {
           right.innerHTML = `<div class="error-msg">Failed to load: ${err.message}</div>`;
@@ -2355,14 +2398,14 @@
 
       const agentRows = agents.length ? agents.map(a => `
         <tr>
-          <td style="padding:8px 12px;color:#e0e0e0;">${escHtml(a.agentId)}</td>
-          <td style="padding:8px 12px;text-align:right;color:#888;">${a.sessionCount}</td>
-          <td style="padding:8px 12px;text-align:right;color:#888;">${formatTokens(a.inputTokens)}</td>
-          <td style="padding:8px 12px;text-align:right;color:#888;">${formatTokens(a.outputTokens)}</td>
-          <td style="padding:8px 12px;text-align:right;color:#4da6ff;font-weight:600;">${formatTokens(a.totalTokens)}</td>
-          <td style="padding:8px 12px;text-align:right;color:#4caf50;">$${a.cost.toFixed(4)}</td>
+          <td style="padding:8px 12px;color:#1a1a1a;">${escHtml(a.agentId)}</td>
+          <td style="padding:8px 12px;text-align:right;color:#6b7280;">${a.sessionCount}</td>
+          <td style="padding:8px 12px;text-align:right;color:#6b7280;">${formatTokens(a.inputTokens)}</td>
+          <td style="padding:8px 12px;text-align:right;color:#6b7280;">${formatTokens(a.outputTokens)}</td>
+          <td style="padding:8px 12px;text-align:right;color:#2563eb;font-weight:600;">${formatTokens(a.totalTokens)}</td>
+          <td style="padding:8px 12px;text-align:right;color:#16a34a;">$${a.cost.toFixed(4)}</td>
         </tr>
-      `).join('') : `<tr><td colspan="6" style="padding:20px;text-align:center;color:#555;">暂无 session 用量数据</td></tr>`;
+      `).join('') : `<tr><td colspan="6" style="padding:20px;text-align:center;color:#9ca3af;">暂无 session 用量数据</td></tr>`;
 
       panel.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -2376,57 +2419,57 @@
               <div class="label">Session 数</div>
             </div>
             <div class="metric" style="min-width:0;">
-              <div class="value" style="color:#4caf50;">$${(total.cost || 0).toFixed(4)}</div>
+              <div class="value" style="color:#16a34a;">$${(total.cost || 0).toFixed(4)}</div>
               <div class="label">预估费用</div>
             </div>
           </div>
           <a href="/api/usage/export.csv" download class="btn btn-ghost" style="font-size:12px;padding:6px 14px;text-decoration:none;">导出 CSV</a>
         </div>
-        <table style="width:100%;border-collapse:collapse;background:#111;border-radius:8px;overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;background:#f8f8f8;border-radius:8px;overflow:hidden;">
           <thead>
-            <tr style="background:#1a1a1a;border-bottom:1px solid #2a2a2a;">
-              <th style="padding:10px 12px;text-align:left;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Agent</th>
-              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Sessions</th>
-              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Input</th>
-              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Output</th>
-              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Total</th>
-              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Cost</th>
+            <tr style="background:#ffffff;border-bottom:1px solid #e5e5e5;">
+              <th style="padding:10px 12px;text-align:left;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Agent</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Sessions</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Input</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Output</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Total</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Cost</th>
             </tr>
           </thead>
           <tbody>${agentRows}</tbody>
         </table>
         <div style="margin-top:24px;">
-          <div style="font-size:11px;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Token 分布（本次 snapshot）</div>
-          <canvas id="usage-chart" width="600" height="120" style="width:100%;max-width:600px;background:#111;border-radius:6px;display:block;"></canvas>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Token 分布（本次 snapshot）</div>
+          <canvas id="usage-chart" width="600" height="120" style="width:100%;max-width:600px;background:#f8f8f8;border-radius:6px;display:block;"></canvas>
         </div>
         ${(data.byProject && data.byProject.length) ? `
         <div style="margin-top:24px;">
-          <div style="font-size:11px;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">项目维度（基于任务归属估算）</div>
-          <table style="width:100%;border-collapse:collapse;background:#111;border-radius:8px;overflow:hidden;">
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">项目维度（基于任务归属估算）</div>
+          <table style="width:100%;border-collapse:collapse;background:#f8f8f8;border-radius:8px;overflow:hidden;">
             <thead>
-              <tr style="background:#1a1a1a;border-bottom:1px solid #2a2a2a;">
-                <th style="padding:10px 12px;text-align:left;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">项目</th>
-                <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">任务数</th>
-                <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">参与 Agent</th>
-                <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">估算 Token</th>
-                <th style="padding:10px 12px;text-align:right;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">估算费用</th>
+              <tr style="background:#ffffff;border-bottom:1px solid #e5e5e5;">
+                <th style="padding:10px 12px;text-align:left;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">项目</th>
+                <th style="padding:10px 12px;text-align:right;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">任务数</th>
+                <th style="padding:10px 12px;text-align:right;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">参与 Agent</th>
+                <th style="padding:10px 12px;text-align:right;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">估算 Token</th>
+                <th style="padding:10px 12px;text-align:right;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">估算费用</th>
               </tr>
             </thead>
             <tbody>
               ${data.byProject.map(p => `
                 <tr style="border-bottom:1px solid #1a1a1a;">
-                  <td style="padding:8px 12px;color:#e0e0e0;">${escHtml(p.projectName)}</td>
-                  <td style="padding:8px 12px;text-align:right;color:#888;">${p.taskCount}</td>
-                  <td style="padding:8px 12px;text-align:right;color:#888;">${escHtml((p.agentIds || []).join(', '))}</td>
-                  <td style="padding:8px 12px;text-align:right;color:#4da6ff;">${formatTokens(p.estimatedTokens)}</td>
-                  <td style="padding:8px 12px;text-align:right;color:#4caf50;">$${p.estimatedCost.toFixed(4)}</td>
+                  <td style="padding:8px 12px;color:#1a1a1a;">${escHtml(p.projectName)}</td>
+                  <td style="padding:8px 12px;text-align:right;color:#6b7280;">${p.taskCount}</td>
+                  <td style="padding:8px 12px;text-align:right;color:#6b7280;">${escHtml((p.agentIds || []).join(', '))}</td>
+                  <td style="padding:8px 12px;text-align:right;color:#2563eb;">${formatTokens(p.estimatedTokens)}</td>
+                  <td style="padding:8px 12px;text-align:right;color:#16a34a;">$${p.estimatedCost.toFixed(4)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
-          <div style="margin-top:6px;font-size:11px;color:#3a3a3a;">* 项目用量为按任务归属比例的加权估算，不含 OpenClaw SQLite 任务</div>
+          <div style="margin-top:6px;font-size:11px;color:#9ca3af;">* 项目用量为按任务归属比例的加权估算，不含 OpenClaw SQLite 任务</div>
         </div>` : ''}
-        <div style="margin-top:12px;font-size:11px;color:#3a3a3a;">生成时间: ${data.generatedAt || '—'}</div>
+        <div style="margin-top:12px;font-size:11px;color:#9ca3af;">生成时间: ${data.generatedAt || '—'}</div>
       `;
 
       // Draw canvas bar chart
@@ -2442,11 +2485,11 @@
           const barH = Math.floor(((a.totalTokens / maxVal) * (h - pad * 3)));
           const x = pad + i * (barW + 6);
           const y = h - pad - barH;
-          ctx.fillStyle = '#4da6ff33';
+          ctx.fillStyle = '#2563eb33';
           ctx.fillRect(x, pad, barW, h - pad * 2);
-          ctx.fillStyle = '#4da6ff';
+          ctx.fillStyle = '#2563eb';
           ctx.fillRect(x, y, barW, barH);
-          ctx.fillStyle = '#888';
+          ctx.fillStyle = '#6b7280';
           ctx.font = '10px system-ui';
           ctx.textAlign = 'center';
           ctx.fillText(a.agentId, x + barW / 2, h - 2);
@@ -2476,9 +2519,9 @@
       const agentCards = sortedAgents.map(a => {
         const lastTs = a.lastActivity ? new Date(a.lastActivity).toLocaleTimeString('zh', { hour12: false }) : '—';
         return `
-          <div style="background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:14px 16px;min-width:150px;">
-            <div style="font-weight:600;color:#e0e0e0;margin-bottom:6px;">${escHtml(a.agentId)}</div>
-            <div style="font-size:11px;color:#555;margin-bottom:4px;">${a.eventCount} 事件 · ${a.sessionCount} session</div>
+          <div style="background:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;padding:14px 16px;min-width:150px;">
+            <div style="font-weight:600;color:#1a1a1a;margin-bottom:6px;">${escHtml(a.agentId)}</div>
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">${a.eventCount} 事件 · ${a.sessionCount} session</div>
             <div style="font-size:11px;color:#444;">最后活跃: ${lastTs}</div>
           </div>
         `;
@@ -2488,29 +2531,29 @@
       const spawnRows = spawnLinks.slice(-20).reverse().map(l => {
         const ts = new Date(l.ts).toLocaleTimeString('zh', { hour12: false });
         const via = viaLabel[l.via] || l.via;
-        const viaColor = l.via === 'agent_tool' ? '#4caf50' : l.via === 'session_announce' ? '#4da6ff' : '#666';
+        const viaColor = l.via === 'agent_tool' ? '#16a34a' : l.via === 'session_announce' ? '#2563eb' : '#9ca3af';
         return `
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#111;border-radius:4px;font-size:12px;">
-            <span style="color:#4da6ff;font-weight:600;">${escHtml(l.from)}</span>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f8f8f8;border-radius:4px;font-size:12px;">
+            <span style="color:#2563eb;font-weight:600;">${escHtml(l.from)}</span>
             <span style="color:#444;">→</span>
-            <span style="color:#9b8fe8;font-weight:600;">${escHtml(l.to)}</span>
-            ${l.description ? `<span style="color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(l.description)}</span>` : '<span style="flex:1"></span>'}
+            <span style="color:#7c3aed;font-weight:600;">${escHtml(l.to)}</span>
+            ${l.description ? `<span style="color:#9ca3af;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(l.description)}</span>` : '<span style="flex:1"></span>'}
             <span style="font-size:10px;color:${viaColor};flex-shrink:0;">${via}</span>
             <span style="color:#333;flex-shrink:0;font-size:11px;">${ts}</span>
           </div>
         `;
-      }).join('') || '<div style="color:#555;font-size:12px;padding:8px;">暂无 spawn 链路记录</div>';
+      }).join('') || '<div style="color:#9ca3af;font-size:12px;padding:8px;">暂无 spawn 链路记录</div>';
 
       const sourceTag = data.spawnSource === 'precise'
-        ? '<span style="font-size:10px;color:#4caf50;margin-left:8px;">精准检测</span>'
-        : '<span style="font-size:10px;color:#666;margin-left:8px;">文本推断</span>';
+        ? '<span style="font-size:10px;color:#16a34a;margin-left:8px;">精准检测</span>'
+        : '<span style="font-size:10px;color:#9ca3af;margin-left:8px;">文本推断</span>';
 
       panel.innerHTML = `
         <h2>Agent 活跃状态</h2>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px;">${agentCards || '<div style="color:#555;font-size:13px;">暂无实时事件</div>'}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px;">${agentCards || '<div style="color:#9ca3af;font-size:13px;">暂无实时事件</div>'}</div>
         <h2 style="display:flex;align-items:center;">Spawn 链路${sourceTag}</h2>
         <div style="display:flex;flex-direction:column;gap:4px;">${spawnRows}</div>
-        <div style="margin-top:12px;font-size:11px;color:#3a3a3a;">共 ${data.eventTotal || 0} 个 session 事件 · 最近 500 条分析</div>
+        <div style="margin-top:12px;font-size:11px;color:#9ca3af;">共 ${data.eventTotal || 0} 个 session 事件 · 最近 500 条分析</div>
       `;
     } catch (err) {
       panel.innerHTML = `<div class="error-msg">加载失败: ${err.message}</div>`;
@@ -2733,7 +2776,7 @@
     for (const ev of evs) {
       const timeStr = new Date(ev.ts).toLocaleTimeString('zh', { hour12: false });
       if (ev.type === 'session_opened') {
-        html += `<div style="color:#3a3a3a;font-size:11px;padding:4px 0">─── 会话开始 ${timeStr} ───</div>`;
+        html += `<div style="color:#9ca3af;font-size:11px;padding:4px 0">─── 会话开始 ${timeStr} ───</div>`;
       } else if (ev.type === 'message') {
         const roleLabel = ev.role === 'user' ? '用户' : '助手';
         html += `<div class="ev-msg ${ev.role}">

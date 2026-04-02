@@ -1,0 +1,10 @@
+{
+  "taskId": "T4",
+  "title": "快捷键支持",
+  "status": "todo",
+  "owner": "forge",
+  "description": "前端加 keydown listener：1-9 切换 tab，r 刷新当前 panel，n 新建任务（Tasks/Projects）",
+  "scope": ["index.html"],
+  "acceptance": "按 1-9 对应 sidebar 顺序切换 tab，按 r 刷新当前 panel 内容，按 n 在 Tasks/Projects panel 打开新建弹窗",
+  "createdAt": "2026-04-02"
+}

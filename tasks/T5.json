@@ -1,0 +1,10 @@
+{
+  "taskId": "T5",
+  "title": "Overview 数值变化动画",
+  "status": "todo",
+  "owner": "forge",
+  "description": "Overview panel 的 metric 卡片数值变化时有淡入淡出或数字滚动动画",
+  "scope": ["index.html overview panel"],
+  "acceptance": "metric 值从 A 变成 B 时，数字有 300ms 过渡动画，不突兀",
+  "createdAt": "2026-04-02"
+}

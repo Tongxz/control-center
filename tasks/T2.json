@@ -1,0 +1,13 @@
+{
+  "taskId": "T2",
+  "title": "Sidebar 异常 badge + SSE 感知",
+  "status": "todo",
+  "owner": "forge",
+  "description": "Sidebar 异常/审批 tab 加红色数字 badge，critical/high 异常触发浏览器通知",
+  "scope": {
+    "frontend": ["index.html sidebar badge", "index.html Notification API"],
+    "backend": ["server.js SSE 推送异常/审批变更事件"]
+  },
+  "acceptance": "异常数 > 0 时 badge 显示数字，critical 异常弹浏览器通知",
+  "createdAt": "2026-04-02"
+}
