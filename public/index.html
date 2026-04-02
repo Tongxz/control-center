@@ -1277,7 +1277,7 @@
       // Security flags — from health.system.securityFlags, fallback to gw-level or empty
       const securityFlags = (health.system && health.system.securityFlags) || gw.securityFlags || [];
       const securityItems = securityFlags.length
-        ? securityFlags.map(f => `<span class="badge badge-blue">${f}</span>`).join(' ')
+        ? securityFlags.map(f => `<span class="badge badge-blue">${escHtml(f)}</span>`).join(' ')
         : '<span style="color:#555;">None</span>';
 
       // Budget

@@ -44,7 +44,12 @@ function listDocs() {
  * Get a single doc by id (e.g. "IDENTITY.md").
  * Returns {id, path, content, size, updatedAt} or null.
  */
+function isValidId(id) {
+  return typeof id === 'string' && /^[a-zA-Z0-9._-]+$/.test(id) && id.length <= 255;
+}
+
 function getDoc(id) {
+  if (!isValidId(id)) return null;
   const filePath = path.join(WORKSPACE_ROOT, id);
   const stat = statOrNull(filePath);
   if (!stat) return null;
@@ -68,6 +73,7 @@ function getDoc(id) {
  * Returns {ok: true} or throws.
  */
 function putDoc(id, content) {
+  if (!isValidId(id)) throw new Error('Invalid id');
   const filePath = path.join(WORKSPACE_ROOT, id);
   fs.writeFileSync(filePath, content, 'utf8');
   return { ok: true };
@@ -173,6 +179,7 @@ function getMemory(agentId) {
  * Returns {ok: true, file} or throws.
  */
 function putMemory(agentId, content) {
+  if (!isValidId(agentId)) throw new Error('Invalid agentId');
   let targetFile = null;
 
   try {

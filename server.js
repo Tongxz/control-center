@@ -755,7 +755,7 @@ function getBudgetFromSessions() {
   // Use the sessions data from snapshot to compute monthly usage
   // Fall back to aggregating from session list if available
   try {
-    const out = execSync('openclaw status --json 2>&1', { shell: true, timeout: 10_000 });
+    const out = execSync(['sh', '-c', 'openclaw status --json 2>&1'], { timeout: 10_000 });
     const firstBrace = out.indexOf('{');
     if (firstBrace === -1) return null;
     const statusData = JSON.parse(out.slice(firstBrace));
@@ -777,7 +777,7 @@ app.get('/api/settings/health', (req, res) => {
   const snap = poll.getSnapshot();
   let channelStatus = [];
   try {
-    const out = execSync('openclaw channels status --probe 2>&1', { shell: true, timeout: 10_000 });
+    const out = execSync(['sh', '-c', 'openclaw channels status --probe 2>&1'], { timeout: 10_000 });
     channelStatus = parseChannelProbe(out.toString());
   } catch {
     channelStatus = (snap?.gateway?.channelStatus || []).map((c) => ({
