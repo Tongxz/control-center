@@ -1,0 +1,51 @@
+{
+  "taskId": "T3",
+  "status": "review_done",
+  "round": 1,
+  "result": "failed",
+  "summary": "PUT URL/method/body 均正确，XSS 防护到位。核心问题：保存失败时没有任何 UI 反馈（静默吞掉 catch），用户体验存在严重缺陷。",
+  "findings": [
+    {
+      "severity": "P0",
+      "type": "error-handling",
+      "location": "public/index.html — Documents panel save handler & Memory panel save handler",
+      "issue": "两个保存 handler 的 catch 块均为空 `catch {}`，保存失败时用户完全不知道发生了什么",
+      "detail": "Documents: `} catch {}` / Memory: `} catch {}`。HTTP 请求失败或返回非 2xx 状态码时，代码没有任何提示，用户可能误以为已保存成功。",
+      "suggestion": "catch 块中至少应读取 response 状态，判断是网络错误还是服务端错误，并展示错误提示。例如：\n\ncatch (err) {\n  msg.style.color = '#dc2626';\n  msg.textContent = '保存失败: ' + err.message;\n  msg.style.display = 'inline';\n  setTimeout(() => { msg.style.display = 'none'; msg.style.color = '#16a34a'; }, 3000);\n}"
+    },
+    {
+      "severity": "P0",
+      "type": "error-handling",
+      "location": "public/index.html — save handler, both panels",
+      "issue": "非 2xx HTTP 状态码（如 400/401/500）不报错，只在 r.ok 时显示成功提示",
+      "detail": "PUT 请求如果返回 400 Bad Request、401 Unauthorized、500 Internal Server Error，代码只检查 `r.ok`（即 status 200-299），不会显示任何提示。",
+      "suggestion": "在检查 `r.ok` 之前，先判断 HTTP 状态码，给出明确错误信息：\n\nif (!r.ok) {\n  const errData = await r.json().catch(() => ({}));\n  msg.style.color = '#dc2626';\n  msg.textContent = '保存失败: ' + (errData.error || 'HTTP ' + r.status);\n  msg.style.display = 'inline';\n  setTimeout(() => { msg.style.display = 'none'; msg.style.color = '#16a34a'; }, 3000);\n  return;\n}"
+    },
+    {
+      "severity": "P1",
+      "type": "ux",
+      "location": "public/index.html — Documents & Memory save buttons",
+      "issue": "保存过程中没有禁用按钮，也没有 loading 状态，用户可重复点击提交",
+      "detail": "连续点击「保存」按钮会发起多个并发的 PUT 请求，结果不确定。",
+      "suggestion": "点击保存后禁用按钮，提交完成（含成功或失败）后恢复。\n\nbtn.disabled = true;\nbtn.textContent = '保存中...';\n// ... fetch ...\nbtn.disabled = false;\nbtn.textContent = '保存';"
+    },
+    {
+      "severity": "P2",
+      "type": "api-design",
+      "location": "public/index.html — Documents save handler",
+      "issue": "成功提示只有 2 秒，服务器处理慢时用户无法确认是否保存成功",
+      "detail": "2 秒后提示消失，如果请求耗时较长，用户可能认为保存失败。",
+      "suggestion": "将成功提示延长至 3-4 秒，或在请求完成后保持显示直到下一次用户操作。"
+    }
+  ],
+  "passed": [
+    "PUT URL 正确：/api/docs/:id（Documents）、/api/memory/:agentId（Memory）",
+    "HTTP method 正确：均为 PUT",
+    "Request body 结构正确：{ content } JSON 格式",
+    "Content-Type header 正确：'Content-Type': 'application/json'",
+    "XSS 防护正确：content 写入 textarea.value 前经过 escHtml() 转义",
+    "encodeURIComponent 正确防止路径中出现特殊字符",
+    "成功时绿色提示'已保存'，2秒后消失，体验良好"
+  ],
+  "reviewedAt": "2026-04-02T14:42:00Z"
+}

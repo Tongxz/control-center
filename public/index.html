@@ -1651,6 +1651,7 @@
           <div class="docs-save-row" style="margin-top:8px;display:flex;gap:8px;align-items:center;">
             <button class="btn btn-primary" id="btn-save-doc" style="font-size:12px;padding:5px 14px;">保存</button>
             <span id="doc-save-msg" style="font-size:12px;color:#16a34a;display:none;">已保存</span>
+            <span id="doc-save-err" style="font-size:12px;color:#dc2626;display:none;"></span>
           </div>
           <div class="docs-api-hint">PUT /api/docs/${escHtml(selectedId)} — 支持保存</div>
         </div>
@@ -1684,6 +1685,7 @@
               <div class="docs-save-row" style="margin-top:8px;display:flex;gap:8px;align-items:center;">
                 <button class="btn btn-primary" id="btn-save-doc" style="font-size:12px;padding:5px 14px;">保存</button>
                 <span id="doc-save-msg" style="font-size:12px;color:#16a34a;display:none;">已保存</span>
+                <span id="doc-save-err" style="font-size:12px;color:#dc2626;display:none;"></span>
               </div>
               <div class="docs-api-hint">PUT /api/docs/${escHtml(id)} — 支持保存</div>
             </div>
@@ -1691,14 +1693,28 @@
           document.getElementById('btn-save-doc')?.addEventListener('click', async () => {
             const content = document.getElementById('doc-content')?.value ?? '';
             const msg = document.getElementById('doc-save-msg');
+            const err = document.getElementById('doc-save-err');
+            const btn = document.getElementById('btn-save-doc');
+            if (!btn) return;
+            btn.disabled = true;
             try {
               const r = await fetch('/api/docs/' + encodeURIComponent(id), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content })
               });
-              if (r.ok && msg) { msg.style.display = 'inline'; setTimeout(() => msg.style.display = 'none', 2000); }
-            } catch {}
+              if (r.ok) {
+                if (msg) { msg.style.display = 'inline'; setTimeout(() => msg.style.display = 'none', 2000); }
+                if (err) err.style.display = 'none';
+              } else {
+                const body = await r.json().catch(() => ({}));
+                if (err) { err.textContent = body.error || ('HTTP ' + r.status); err.style.display = 'inline'; }
+              }
+            } catch (e) {
+              if (err) { err.textContent = e.message || '保存失败'; err.style.display = 'inline'; }
+            } finally {
+              btn.disabled = false;
+            }
           });
           // Update active state without full re-render
           panel.querySelectorAll('.doc-entry').forEach(e => {
@@ -1927,6 +1943,7 @@
           <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
             <button class="btn btn-primary" id="btn-save-mem" style="font-size:12px;padding:5px 14px;">保存</button>
             <span id="mem-save-msg" style="font-size:12px;color:#16a34a;display:none;">已保存</span>
+            <span id="mem-save-err" style="font-size:12px;color:#dc2626;display:none;"></span>
           </div>
         </div>
       `;
@@ -1952,6 +1969,7 @@
             <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
               <button class="btn btn-primary" id="btn-save-mem" style="font-size:12px;padding:5px 14px;">保存</button>
               <span id="mem-save-msg" style="font-size:12px;color:#16a34a;display:none;">已保存</span>
+              <span id="mem-save-err" style="font-size:12px;color:#dc2626;display:none;"></span>
             </div>
           </div>
         `;
@@ -1975,14 +1993,28 @@
           document.getElementById('btn-save-mem')?.addEventListener('click', async () => {
             const content = document.getElementById('mem-content')?.value ?? '';
             const msg = document.getElementById('mem-save-msg');
+            const err = document.getElementById('mem-save-err');
+            const btn = document.getElementById('btn-save-mem');
+            if (!btn) return;
+            btn.disabled = true;
             try {
               const r = await fetch('/api/memory/' + encodeURIComponent(agentId), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content })
               });
-              if (r.ok && msg) { msg.style.display = 'inline'; setTimeout(() => msg.style.display = 'none', 2000); }
-            } catch {}
+              if (r.ok) {
+                if (msg) { msg.style.display = 'inline'; setTimeout(() => msg.style.display = 'none', 2000); }
+                if (err) err.style.display = 'none';
+              } else {
+                const body = await r.json().catch(() => ({}));
+                if (err) { err.textContent = body.error || ('HTTP ' + r.status); err.style.display = 'inline'; }
+              }
+            } catch (e) {
+              if (err) { err.textContent = e.message || '保存失败'; err.style.display = 'inline'; }
+            } finally {
+              btn.disabled = false;
+            }
           });
         } catch (err) {
           right.innerHTML = `<div class="error-msg">Failed to load: ${err.message}</div>`;

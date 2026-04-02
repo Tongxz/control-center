@@ -1,0 +1,34 @@
+{
+  "taskId": "T3",
+  "status": "fix_in_progress",
+  "round": 1,
+  "reviewRound": 1,
+  "result": "pending",
+  "findings": [
+    {
+      "severity": "P0",
+      "type": "error-handling",
+      "location": "public/index.html — Documents panel save handler & Memory panel save handler",
+      "issue": "两个保存 handler 的 catch 块均为空 `catch {}`，保存失败时用户完全不知道发生了什么",
+      "detail": "Documents: `} catch {}` / Memory: `} catch {}`。HTTP 请求失败或返回非 2xx 状态码时，代码没有任何提示，用户可能误以为已保存成功。",
+      "suggestion": "catch 块中至少应读取 response 状态，判断是网络错误还是服务端错误，并展示错误提示。例如：\n\ncatch (err) {\n  msg.style.color = '#dc2626';\n  msg.textContent = '保存失败: ' + err.message;\n  msg.style.display = 'inline';\n  setTimeout(() => { msg.style.display = 'none'; msg.style.color = '#16a34a'; }, 3000);\n}"
+    },
+    {
+      "severity": "P0",
+      "type": "error-handling",
+      "location": "public/index.html — save handler, both panels",
+      "issue": "非 2xx HTTP 状态码（如 400/401/500）不报错，只在 r.ok 时显示成功提示",
+      "detail": "PUT 请求如果返回 400 Bad Request、401 Unauthorized、500 Internal Server Error，代码只检查 `r.ok`（即 status 200-299），不会显示任何提示。",
+      "suggestion": "在检查 `r.ok` 之前，先判断 HTTP 状态码，给出明确错误信息：\n\nif (!r.ok) {\n  const errData = await r.json().catch(() => ({}));\n  msg.style.color = '#dc2626';\n  msg.textContent = '保存失败: ' + (errData.error || 'HTTP ' + r.status);\n  msg.style.display = 'inline';\n  setTimeout(() => { msg.style.display = 'none'; msg.style.color = '#16a34a'; }, 3000);\n  return;\n}"
+    },
+    {
+      "severity": "P1",
+      "type": "ux",
+      "location": "public/index.html — Documents & Memory save buttons",
+      "issue": "保存过程中没有禁用按钮，也没有 loading 状态，用户可重复点击提交",
+      "detail": "连续点击「保存」按钮会发起多个并发的 PUT 请求，结果不确定。",
+      "suggestion": "点击保存后禁用按钮，提交完成（含成功或失败）后恢复。\n\nbtn.disabled = true;\nbtn.textContent = '保存中...';\n// ... fetch ...\nbtn.disabled = false;\nbtn.textContent = '保存';"
+    }
+  ],
+  "fixInProgress": true
+}

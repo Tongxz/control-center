@@ -1,7 +1,7 @@
 {
   "taskId": "T3",
   "title": "文档/记忆恢复保存功能",
-  "status": "todo",
+  "status": "dev_done",
   "owner": "forge",
   "description": "文档 panel 和记忆 panel 的 textarea 移除 readonly，加保存按钮，接通 PUT API",
   "scope": ["index.html docs panel", "index.html memory panel"],
