@@ -46,7 +46,9 @@
     }
 
     .tab-btn {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       width: 100%;
       padding: 10px 16px;
       background: none;
@@ -69,6 +71,47 @@
       color: #2563eb;
       background: #2563eb10;
       border-left-color: #2563eb;
+    }
+
+    .tab-label {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .sidebar-badge {
+      display: none;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: #dc2626;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 18px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .sidebar-badge.visible {
+      display: inline-block;
+    }
+
+    .sidebar-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d1d5db;
+      flex-shrink: 0;
+      display: none;
+    }
+
+    .sidebar-status.visible {
+      display: inline-block;
+    }
+
+    .sidebar-status.connected {
+      background: #16a34a;
     }
 
     /* ── Content ── */
@@ -936,19 +979,19 @@
     OpenClaw
     <span>Control Center</span>
   </div>
-  <button class="tab-btn active" data-tab="overview">总览</button>
-  <button class="tab-btn" data-tab="agents">智能体</button>
-  <button class="tab-btn" data-tab="tasks">任务</button>
-  <button class="tab-btn" data-tab="projects">项目</button>
-  <button class="tab-btn" data-tab="exceptions">异常中心</button>
-  <button class="tab-btn" data-tab="documents">文档</button>
-  <button class="tab-btn" data-tab="memory">记忆</button>
-  <button class="tab-btn" data-tab="settings">设置</button>
-  <button class="tab-btn" data-tab="approvals">审批</button>
-  <button class="tab-btn" data-tab="timeline">Timeline</button>
-  <button class="tab-btn" data-tab="sessions">实时会话</button>
-  <button class="tab-btn" data-tab="usage">账单</button>
-  <button class="tab-btn" data-tab="hall">协作图</button>
+  <button class="tab-btn active" data-tab="overview"><span class="tab-label">总览</span></button>
+  <button class="tab-btn" data-tab="agents"><span class="tab-label">智能体</span></button>
+  <button class="tab-btn" data-tab="tasks"><span class="tab-label">任务</span></button>
+  <button class="tab-btn" data-tab="projects"><span class="tab-label">项目</span></button>
+  <button class="tab-btn" data-tab="exceptions"><span class="tab-label">异常中心</span><span class="sidebar-status visible" id="sidebar-exceptions-sse"></span><span class="sidebar-badge" id="sidebar-exceptions-badge">0</span></button>
+  <button class="tab-btn" data-tab="documents"><span class="tab-label">文档</span></button>
+  <button class="tab-btn" data-tab="memory"><span class="tab-label">记忆</span></button>
+  <button class="tab-btn" data-tab="settings"><span class="tab-label">设置</span></button>
+  <button class="tab-btn" data-tab="approvals"><span class="tab-label">审批</span><span class="sidebar-status visible" id="sidebar-approvals-sse"></span><span class="sidebar-badge" id="sidebar-approvals-badge">0</span></button>
+  <button class="tab-btn" data-tab="timeline"><span class="tab-label">Timeline</span></button>
+  <button class="tab-btn" data-tab="sessions"><span class="tab-label">实时会话</span></button>
+  <button class="tab-btn" data-tab="usage"><span class="tab-label">账单</span></button>
+  <button class="tab-btn" data-tab="hall"><span class="tab-label">协作图</span></button>
 </div>
 
 <!-- Content -->
@@ -965,6 +1008,13 @@
   }
 
   // ── Panel Content Templates ──────────────────────────────────
+
+  let _exceptionPollTimer = null;
+  let _lastExceptionSnapshot = { total: 0, counts: { critical: 0, high: 0, medium: 0, low: 0 } };
+  const _notifiedExceptionKeys = new Set();
+  let _notificationPermissionRequested = false;
+  let _sidebarSseConnected = false;
+  let _exceptionRefreshScheduled = false;
 
   const panels = {
     sessions: `
@@ -2891,6 +2941,76 @@
 
   function _esc(str) {
     return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // ── Sidebar Badge & Notifications ─────────────────────────────
+  function updateSidebarExceptions() {
+    fetch('/api/exceptions')
+      .then(r => r.ok ? r.json() : [])
+      .then(exceptions => {
+        const total = Array.isArray(exceptions) ? exceptions.length : 0;
+        const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+        exceptions.forEach(e => { if (counts[e.severity] !== undefined) counts[e.severity]++; });
+
+        const badge = document.getElementById('sidebar-exceptions-badge');
+        if (badge) {
+          badge.textContent = total;
+          badge.classList.toggle('visible', total > 0);
+        }
+
+        // Browser notification for new critical/high
+        if (total > 0) {
+          const newCritical = exceptions.filter(e =>
+            (e.severity === 'critical' || e.severity === 'high') &&
+            !_notifiedExceptionKeys.has(e.exceptionId)
+          );
+          if (newCritical.length) {
+            newCritical.forEach(e => _notifiedExceptionKeys.add(e.exceptionId));
+            if (Notification.permission === 'granted') {
+              newCritical.forEach(e => new Notification('OpenClaw 异常告警', {
+                body: `[${e.severity.toUpperCase()}] ${e.message}`,
+                tag: e.exceptionId,
+              }));
+            } else if (Notification.permission !== 'denied' && !_notificationPermissionRequested) {
+              _notificationPermissionRequested = true;
+              Notification.requestPermission();
+            }
+          }
+        }
+      }).catch(() => {});
+  }
+
+  function updateSidebarApprovals() {
+    fetch('/api/approvals')
+      .then(r => r.ok ? r.json() : [])
+      .then(approvals => {
+        const pending = Array.isArray(approvals) ? approvals.filter(a => a.status === 'pending').length : 0;
+        const badge = document.getElementById('sidebar-approvals-badge');
+        if (badge) {
+          badge.textContent = pending;
+          badge.classList.toggle('visible', pending > 0);
+        }
+      }).catch(() => {});
+  }
+
+  function updateSidebarBadges() {
+    updateSidebarExceptions();
+    updateSidebarApprovals();
+  }
+
+  // Update badges every 30 seconds
+  setInterval(updateSidebarBadges, 30_000);
+  // Initial load after 2s (wait for first snapshot)
+  setTimeout(updateSidebarBadges, 2000);
+
+  // SSE connected indicator for sidebar
+  const _sseDot = document.getElementById('sse-dot');
+  if (_sseDot) {
+    setInterval(() => {
+      const connected = _sseDot.classList.contains('connected');
+      document.getElementById('sidebar-exceptions-sse')?.classList.toggle('connected', connected);
+      document.getElementById('sidebar-approvals-sse')?.classList.toggle('connected', connected);
+    }, 5000);
   }
 </script>
 
