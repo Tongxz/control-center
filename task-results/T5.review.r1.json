@@ -1,7 +1,76 @@
 {
   "taskId": "T5",
+  "status": "reviewed",
   "round": 1,
-  "result": "passed",
-  "summary": "Overview metric 卡片数值变化动画已实现，使用 CSS transition（300ms）配合 setTimeout，无持续 requestAnimationFrame，数值插值（6步/300ms）用于 number 和 ratio 类型，符合任务要求。",
-  "findings": []
+  "reviewer": "reviewer",
+  "reviewedAt": "2026-04-02T23:03:00+08:00",
+  "commit": "0d772d4",
+  "verdict": "需修改",
+  "summary": "动画核心机制实现合理，但存在 2 个 P0 级别的定时器泄漏问题，以及 1 个 P1 的颜色 flash 逻辑误判。",  
+
+  "p0": [
+    {
+      "issue": "setInterval 定时器累积（严重）",
+      "location": "animateOverviewMetrics() 内每个 metric 的 setInterval",
+      "detail": "loadOverview() 允许被重复调用（如键盘快捷键 r 刷新、tab 切换），每次调用 animateOverviewMetrics() 都会在已有元素的 DOM 上启动新的 setInterval，但不清理旧 timer。同一 numberEl 上旧 timer 与新 timer 并发运行，numberEl.textContent 被交替赋值，导致数字闪烁/乱跳。",
+      "fix": "在 .metric-value 元素上存储 timer ID（el._timer），动画开始前先 clearInterval(el._timer) 再启动新 timer；ratio 类型同理。",
+      "severity": "P0"
+    },
+    {
+      "issue": "overviewMetricState 无限增长",
+      "location": "overviewMetricState = new Map() 持续 put，永不清理",
+      "detail": "overviewMetricState.map 持续追加 key，永不删除。当 dashboard 运行很长时间（如服务器场景），map 会越来越大。",
+      "fix": "在 state 超出一定数量后做清理（如保留最近 N 个 key），或每次 loadOverview 时比对实际存在的 key 做清理。",
+      "severity": "P0"
+    }
+  ],
+
+  "p1": [
+    {
+      "issue": "等值时仍触发 green flash",
+      "location": "animateOverviewMetrics(): direction 判断 nextNumber >= previousNumber 时包含相等",
+      "detail": "数值不变时 direction 仍为 'up'，触发 flash-up（绿色），视觉上会出现一次无意义的颜色闪烁。用户感知到「数字没变但闪了一下绿」。",
+      "fix": "改为 nextNumber > previousNumber ? 'up' : (nextNumber < previousNumber ? 'down' : null)，direction 为 null 时跳过动画直接更新 state。",
+      "severity": "P1"
+    },
+    {
+      "issue": "ratio 类型 previous.value 解析不准确",
+      "location": "animateOverviewMetrics() ratio 分支: previous.current ?? previous.value.split('/')[0]",
+      "detail": "当 previous 来自 overviewMetricState 而非本次 DOM dataset 时，previous.value 是完整的 '3/5' 字符串，previous.current 可能是 undefined（第一轮渲染后还未同步）。此时 fallback split('/')[0] 可用，但 total 也来自 previous.value.split('/')[1]，逻辑上勉强成立，但不够清晰。更稳妥的做法是始终以 dataset 中的 data-current/data-total 为准。",
+      "fix": "ratio 分支优先读取 el.dataset.current 和 el.dataset.total（渲染后 DOM 已同步），previous 仅作兜底起始值。",
+      "severity": "P1"
+    }
+  ],
+
+  "p2": [
+    {
+      "issue": "CSS 300ms vs JS 320ms 时序轻微不匹配",
+      "location": "CSS .metric-value transition: 300ms；JS setTimeout delay: 320ms",
+      "detail": "320ms 移除 .updating/.flash-* 类时 CSS transition 已接近尾声，视觉上影响极小，但建议统一为 300ms 或略小于 300ms（如 310ms）以确保类移除时 transition 刚好结束。",
+      "fix": "setTimeout(..., 320) → setTimeout(..., 300)",
+      "severity": "P2"
+    },
+    {
+      "issue": ".updating 视觉方向与语义不符",
+      "location": "CSS .metric-value.updating { transform: translateY(-4px); opacity: 0.7; }",
+      "detail": "updating 状态是向上位移（-4px）+ 变淡，表示「正在更新」。语义上 updating 应该暗示新值到来，但向上位移和变淡可能让人联想到旧值消失。更直观的方式是向下位移（+4px）表示新值「落下来」。不过这是主观设计判断，不算 bug。",
+      "severity": "P2"
+    },
+    {
+      "issue": "Uptime 等非数字值的 direction fallback",
+      "location": "direction 判断: !Number.isFinite(...) 时默认 'up'",
+      "detail": "Uptime 字符串如 '2d 3h' 无法转数字，默认走 'up' → flash-up 绿色。但 Uptime 减少（如服务重启导致 uptime 重置）不会触发红色。影响极小，可接受。",
+      "severity": "P2"
+    }
+  ],
+
+  "passed": [
+    "无持续 requestAnimationFrame，性能符合要求 ✓",
+    "300ms CSS transition + 6步×50ms setInterval，总时长 300ms 与 CSS 对齐 ✓",
+    "比例值（busyAgents/totalAgents）使用独立 ratio 类型动画，分数分子插值、分母固定，逻辑合理 ✓",
+    "overviewMetricState 作为增量缓存而非全量快照，避免不必要重渲染 ✓",
+    "delta direction 逻辑（涨绿跌红）方向判断正确 ✓"
+  ],
+
+  "scope_note": "diff 中含 showNewTaskModal()、keyboard shortcuts (1-9/r/n)、notification rebuild 等超出 T5 范围的变更，与 T5 审查无关，未纳入审查范围。"
 }

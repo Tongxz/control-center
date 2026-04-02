@@ -1169,7 +1169,6 @@
   showPanel('overview');
 
   // ── 总览 Panel ──────────────────────────────────────────
-  const overviewMetricState = new Map();
 
   function renderDeltaArrow(delta) {
     if (!delta || !delta.changed) return '';
@@ -1212,22 +1211,22 @@
       const key = el.dataset.key;
       const type = el.dataset.type;
       const nextValue = el.dataset.value;
-      const previous = overviewMetricState.get(key);
+      const previous = el.dataset.prevValue;
 
       if (!previous) {
-        overviewMetricState.set(key, { value: nextValue });
+        el.dataset.prevValue = nextValue;
         return;
       }
 
-      if (previous.value === nextValue) {
-        overviewMetricState.set(key, { value: nextValue });
+      if (previous === nextValue) {
+        el.dataset.prevValue = nextValue;
         return;
       }
 
       const nextNumber = Number(nextValue);
-      const previousNumber = Number(previous.value);
+      const previousNumber = Number(previous);
       const direction = Number.isFinite(nextNumber) && Number.isFinite(previousNumber)
-        ? (nextNumber >= previousNumber ? 'up' : 'down')
+        ? (nextNumber > previousNumber ? 'up' : 'down')
         : 'up';
       const flashClass = direction === 'up' ? 'flash-up' : 'flash-down';
       const numberEl = el.querySelector('.metric-number');
@@ -1237,45 +1236,27 @@
         el.classList.remove('updating', flashClass);
       }, 320);
 
-      if (type === 'number' && numberEl) {
-        const start = Number(previous.value);
+      if ((type === 'number' || type === 'ratio') && numberEl) {
+        const start = Number(previous);
         const end = Number(nextValue);
         const steps = 6;
         let step = 0;
         numberEl.textContent = String(start);
-        const timer = setInterval(() => {
+        // Clear any existing timer on this element to prevent accumulation
+        if (el._animTimer) clearInterval(el._animTimer);
+        el._animTimer = setInterval(() => {
           step += 1;
           const progress = step / steps;
           numberEl.textContent = String(Math.round(start + (end - start) * progress));
           if (step >= steps) {
-            clearInterval(timer);
-            numberEl.textContent = nextValue;
-          }
-        }, 50);
-      } else if (type === 'ratio' && numberEl) {
-        const startCurrent = Number(previous.current ?? previous.value.split('/')[0] ?? 0);
-        const endCurrent = Number(el.dataset.current ?? nextValue.split('/')[0] ?? 0);
-        const total = el.dataset.total ?? nextValue.split('/')[1] ?? '';
-        const steps = 6;
-        let step = 0;
-        numberEl.textContent = `${startCurrent}/${total}`;
-        const timer = setInterval(() => {
-          step += 1;
-          const progress = step / steps;
-          const current = Math.round(startCurrent + (endCurrent - startCurrent) * progress);
-          numberEl.textContent = `${current}/${total}`;
-          if (step >= steps) {
-            clearInterval(timer);
+            clearInterval(el._animTimer);
+            el._animTimer = null;
             numberEl.textContent = nextValue;
           }
         }, 50);
       }
 
-      overviewMetricState.set(key, {
-        value: nextValue,
-        current: el.dataset.current,
-        total: el.dataset.total
-      });
+      el.dataset.prevValue = nextValue;
     });
   }
 
